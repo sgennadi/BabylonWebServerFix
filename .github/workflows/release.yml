@@ -1,0 +1,39 @@
+name: Preview release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Preview release tag, e.g. v0.1.0-preview.1 (must exist)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  preview-release:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build + smoke test
+        shell: pwsh
+        run: |
+          dotnet build src/BabylonWebServerFix/BabylonWebServerFix.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet run --project tests/BabylonWebServerFix.SmokeTests/BabylonWebServerFix.SmokeTests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet publish src/BabylonWebServerFix/BabylonWebServerFix.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=false -o dist
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Publish unsigned preview
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release create "$env:TAG" "dist/BabylonWebServerFix.exe" --title "$env:TAG" --prerelease --notes "Unsigned preview build. Validate IIS, Apache/XAMPP and Babylon on one test computer before deploying." --verify-tag

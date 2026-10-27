@@ -110,4 +110,4 @@ git remote add origin https://github.com/sgennadi/BabylonWebServerFix.git
 git push -u origin main
 ```
 
-Replace `YOUR-USER` with your GitHub account. Wait for **Windows build and smoke tests** to pass before distributing any generated executable. The project intentionally does not bundle a compiled executable or Microsoft MSI.
+Replace `sgennadi` with your GitHub account. Wait for **Windows build and smoke tests** to pass before distributing any generated executable. The project intentionally does not bundle a compiled executable or Microsoft MSI.
