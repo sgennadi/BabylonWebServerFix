@@ -1,4 +1,4 @@
-# Validation matrix for stable 1.0.0
+# Validation matrix for stable 1.0.0 / v1.0.1 development
 
 The CLI must compile on `windows-2025` with .NET 10 before testing.
 
@@ -6,6 +6,10 @@ The CLI must compile on `windows-2025` with .NET 10 before testing.
 |---|---|---|
 | Windows workstation without IIS/Apache | `install` makes no changes, does not delete cache, does not create log | [ ] |
 | IIS only, W3SVC stopped | Adds rule without starting W3SVC | [ ] |
+| IIS missing RewriteModule, MSI stored beside the EXE | Use signed local MSI without contacting Microsoft URL | [ ] Source precedence covered by offline smoke test; target-machine test pending |
+| IIS missing RewriteModule, custom official URL | Use `--msi-url` with Microsoft HTTPS direct MSI | [ ] URL validation unit-tested; network installation with new URL not yet verified |
+| IIS missing RewriteModule, default Microsoft URL unavailable | Fail with offline UNC instructions, never silently proceed | [ ] Error path logic reviewed; target-machine network failure not reproduced |
+| IIS already has newer RewriteModule | Skip download and upgrade; apply compatible rule | [ ] Future version compatibility not yet tested |
 | IIS missing URL Rewrite, IIS/W3SVC running | Validate the official Microsoft MSI via native WinTrust, install URL Rewrite 2.1 and create the Babylon rule | [x] 2026-10-28 BASE-IMAGE: W3SVC Started, MSI exit=0, rule installed, DONE. EXE SHA-256 matched published v0.1.3-preview.1 Release asset |
 | Downloaded URL Rewrite MSI cleanup | Automatically delete only the downloaded temporary MSI after installation | [ ] Code attempts cleanup in finally; file absence not confirmed in test log |
 | Unsigned or spoofed MSI | Reject without installation | [x] Windows CI negative signature test; spoofed subject covered by unit tests |

@@ -7,6 +7,7 @@ public sealed record CliOptions
     public string Action { get; private set; } = "install";
     public string Site { get; private set; } = "Default Web Site";
     public string? MsiPath { get; private set; }
+    public Uri? MsiUrl { get; private set; }
     public string? ApacheHttpdPath { get; private set; }
     public string? ApacheConfigPath { get; private set; }
     public string CacheVersion { get; private set; } = "1,0,0,0";
@@ -43,6 +44,7 @@ public sealed record CliOptions
             {
                 case "--site": o.Site = NeedValue(); break;
                 case "--msi": o.MsiPath = NeedValue(); break;
+                case "--msi-url": o.MsiUrl = RewriteInstallerPolicy.ParseMicrosoftDownloadUrl(NeedValue()); break;
                 case "--apache-httpd": o.ApacheHttpdPath = NeedValue(); break;
                 case "--apache-config": o.ApacheConfigPath = NeedValue(); break;
                 case "--cache-version": o.CacheVersion = NeedValue(); break;
@@ -58,6 +60,7 @@ public sealed record CliOptions
             }
         }
         if (string.IsNullOrWhiteSpace(o.Site)) throw new ArgumentException("--site must not be empty");
+        if (o.MsiPath is not null && o.MsiUrl is not null) throw new ArgumentException("--msi and --msi-url cannot be combined");
         if (o.LogPath != null && !o.EnableLog) throw new ArgumentException("--log-path requires --enable-log");
         if (o.CleanupNextLogon && o.Action is not ("install" or "cache-only"))
             throw new ArgumentException("--cleanup-next-logon is only valid for install / cache-only");
@@ -79,7 +82,8 @@ public sealed record CliOptions
 
         Options:
           --site "Default Web Site"     IIS site name
-          --msi PATH                    Local / network official URL Rewrite MSI
+          --msi PATH                    Offline Microsoft-signed MSI (local / network share)
+          --msi-url HTTPS_URL           Updated direct Microsoft .msi download URL
           --apache-httpd PATH           Exact Apache httpd.exe if detection is ambiguous
           --apache-config PATH          Apache httpd.conf when nonstandard
           --skip-cache                  Install without clearing cache
@@ -94,5 +98,7 @@ public sealed record CliOptions
 
         An elevated Windows x64 terminal is required for mutating actions.
         If neither IIS nor Apache is present: do nothing (including cache cleanup).
+        IIS installer search: --msi, then --msi-url, then MSI beside EXE, then Microsoft URL.
+        An installed RewriteModule is reused; no automatic upgrade is attempted.
         """;
 }

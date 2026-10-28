@@ -4,7 +4,6 @@ namespace BabylonWebServerFix.Services;
 
 internal sealed class IisService(CliOptions options, DeployLog log)
 {
-    private static readonly Uri OfficialMsi = new("https://download.microsoft.com/download/1/2/8/128E2E22-C1B9-44A4-BE2A-5859ED1D4592/rewrite_amd64_en-US.msi");
     private readonly CliOptions _options = options;
     private readonly DeployLog _log = log;
     public static bool IsInstalled => WindowsSystem.ServiceInstalled("W3SVC");
@@ -37,7 +36,7 @@ internal sealed class IisService(CliOptions options, DeployLog log)
             }
             if (_options.DryRun)
             {
-                _log.Info("Would install Microsoft IIS URL Rewrite 2.1 x64 and configure compatibility rule.");
+                _log.Info("Would install signed Microsoft IIS URL Rewrite from offline MSI or HTTPS and configure compatibility rule.");
                 return;
             }
         }
@@ -131,26 +130,55 @@ internal sealed class IisService(CliOptions options, DeployLog log)
     private async Task EnsureRewriteAsync()
     {
         string? downloadedFile = null;
-        var package = _options.MsiPath;
+        var selected = RewriteInstallerPolicy.Select(_options.MsiPath, _options.MsiUrl, AppContext.BaseDirectory);
+        string? package = selected.LocalPath;
         try
         {
-            if (string.IsNullOrWhiteSpace(package))
+            if (selected.DownloadUrl is Uri downloadUrl)
             {
-                var beside = Path.Combine(AppContext.BaseDirectory, "rewrite_amd64_en-US.msi");
-                if (File.Exists(beside)) package = beside;
-                else
+                // A missing URL or unreachable Microsoft CDN must not trigger
+                // an unsigned/unverified download from a different domain.
+                downloadedFile = Path.Combine(Path.GetTempPath(), $"rewrite_{Guid.NewGuid():N}.msi");
+                package = downloadedFile;
+                _log.Info("Downloading signed IIS URL Rewrite MSI from " + downloadUrl.Host + ".");
+                try
                 {
-                    downloadedFile = Path.Combine(Path.GetTempPath(), $"rewrite_{Guid.NewGuid():N}.msi");
-                    package = downloadedFile;
-                    _log.Info("Downloading official IIS URL Rewrite 2.1 MSI.");
                     using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
-                    await using var source = await client.GetStreamAsync(OfficialMsi);
+                    using var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
+                    response.EnsureSuccessStatusCode();
+                    const long maxInstallerBytes = 128L * 1024L * 1024L;
+                    if (response.Content.Headers.ContentLength is > maxInstallerBytes)
+                        throw new InvalidDataException("IIS URL Rewrite MSI exceeds maximum download size.");
+                    await using var source = await response.Content.ReadAsStreamAsync();
                     await using var dest = new FileStream(package, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-                    await source.CopyToAsync(dest);
+                    var buffer = new byte[81920];
+                    long total = 0;
+                    int read;
+                    while ((read = await source.ReadAsync(buffer)) > 0)
+                    {
+                        total += read;
+                        if (total > maxInstallerBytes)
+                            throw new InvalidDataException("IIS URL Rewrite MSI exceeds maximum download size.");
+                        await dest.WriteAsync(buffer.AsMemory(0, read));
+                    }
+                    if (total == 0) throw new InvalidDataException("IIS URL Rewrite download is empty.");
+                }
+                catch (Exception e) when (e is HttpRequestException or TaskCanceledException or IOException or InvalidDataException)
+                {
+                    throw new InvalidOperationException(
+                        "IIS URL Rewrite download failed. Copy Microsoft's signed x64 rewrite_amd64_en-US.msi " +
+                        "beside BabylonWebServerFix.exe, or use --msi \"\\\\server\\share\\rewrite_amd64_en-US.msi\". " +
+                        "For an updated official URL use --msi-url HTTPS_URL. No untrusted fallback was attempted.", e);
                 }
             }
+            else
+            {
+                _log.Info("Using offline IIS URL Rewrite MSI: " + package);
+            }
+            if (package is null || !File.Exists(package))
+                throw new FileNotFoundException(
+                    "IIS URL Rewrite MSI missing. Provide --msi PATH or copy rewrite_amd64_en-US.msi beside the EXE.", package);
             package = Path.GetFullPath(package);
-            if (!File.Exists(package)) throw new FileNotFoundException("URL Rewrite MSI missing", package);
             // Verify Authenticode trust and the Microsoft signer using WinTrust.
             // No PowerShell process or script execution is required.
             AuthenticodeVerifier.RequireMicrosoftSignature(package);

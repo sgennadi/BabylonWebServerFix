@@ -2,7 +2,7 @@
 
 **Windows x64 utility for Babylon Pro 12 compatibility with Microsoft IIS and Apache/XAMPP.**
 
-> **v1.0.0 Stable (supported test configurations).** Windows CI and 31 offline smoke tests passed for the preceding preview; Babylon translation was validated separately with IIS and Apache/XAMPP on test workstations. Additional deployment scenarios still require local validation, as documented below.
+> **Latest release: v1.0.0 Stable.** The `main` branch includes unreleased **v1.0.1** work on offline IIS installer fallback and future Microsoft URL changes. Test those changes via GitHub Actions before upgrading deployment. Babylon translation was verified with IIS and Apache/XAMPP on test workstations.
 
 Babylon 12 embeds an MSHTML-based viewer that may request `http://localhost/?uid=...&ver=12000&bld=13&iev=11...`. A local web server can intercept that URL and replace Babylon's interface with a site response. This tool configures narrowly scoped server rules and optionally cleans temporary WinINet files without changing IP addresses, port bindings, Babylon installation files or licenses.
 
@@ -15,6 +15,20 @@ Babylon 12 embeds an MSHTML-based viewer that may request `http://localhost/?uid
 The latest development build artifacts are also available through [Windows build and smoke tests](https://github.com/sgennadi/BabylonWebServerFix/actions/workflows/build.yml). Prefer the versioned stable release for deployment.
 
 The EXE is **unsigned** until a code-signing certificate is configured. GitHub Actions produces a self-contained .NET 10 single-file build; target machines do not need a separate .NET runtime or PowerShell scripts.
+
+## Offline IIS URL Rewrite installation and future updates
+
+The Microsoft IIS page currently publishes **URL Rewrite 2.1**. This utility checks IIS for an existing `RewriteModule` first: **if present, it does not download or upgrade the module**, even when newer releases become available. Compatibility of a future Microsoft release must still be tested.
+
+If the installer URL is blocked, moved or retired, supply the **genuine Microsoft-signed x64 MSI** using one of these methods:
+
+1. **Recommended for deployments:** place `rewrite_amd64_en-US.msi` beside `BabylonWebServerFix.exe` on the deployment share. It is used automatically when IIS needs the module. No Microsoft download is required.
+2. Supply a local or UNC path: `BabylonWebServerFix.exe install --msi "\\\\edu-dc02\Installation\Babylon\rewrite_amd64_en-US.msi"`.
+3. If Microsoft publishes a **new direct MSI URL**, use `BabylonWebServerFix.exe install --msi-url "https://download.microsoft.com/download/1/2/8/128E2E22-C1B9-44A4-BE2A-5859ED1D4592/rewrite_amd64_en-US.msi"` with the newer official direct link substituted when it changes, without recompiling the EXE. Do not pass a webpage URL.
+
+Selection: use either an explicit `--msi` (local/UNC path) or an explicit `--msi-url` (Microsoft HTTPS); otherwise the utility prefers an MSI beside the EXE, then the embedded Microsoft URL. `--msi` and `--msi-url` cannot be combined. If a remote download fails and no offline source is provided, the tool stops with an actionable error; it **never silently installs an untrusted package**. All candidate MSI files are validated by Windows Authenticode/WinTrust and Microsoft publisher identity before installation, and the resulting IIS module must register as `RewriteModule`.
+
+For network deployments, make the shared MSI and EXE read-only to students; only administrators should be able to replace installers.
 
 ## Quick start (Command Prompt / CMD)
 
@@ -51,7 +65,7 @@ Run `--help` for the complete option list. Notable options: `--site "Default Web
 ### Default behavior
 
 - If neither IIS nor Apache is installed: **do nothing**, including no cache cleanup.
-- If IIS is installed: configure the managed IIS URL Rewrite rule. If URL Rewrite 2.1 is missing, download the official Microsoft MSI (or use `--msi`) and validate its **Authenticode trust and Microsoft signer** using Windows WinTrust APIs, without launching PowerShell. Only the downloaded MSI is automatically deleted.
+- If IIS is installed: configure the managed IIS URL Rewrite rule. If URL Rewrite is missing, use an offline MSI or a direct official Microsoft MSI download (overridable via `--msi-url`) and validate its **Authenticode trust and Microsoft signer** using Windows WinTrust APIs, without launching PowerShell. Only the downloaded MSI is automatically deleted.
 - If Apache 2.4 is installed: configure the managed Apache rule, back up `httpd.conf`, validate using `httpd -t`, and restart a running Apache when configuration changed. An unchanged rule does **not** trigger a restart.
 - If Babylon is running: stop it before cache cleanup and restart it in the original interactive user session when a safe non-elevated restart can be arranged. If it was not running, leave it stopped.
 - Clear temporary WinINet web files for non-special Windows user profiles; preserve cookies and saved credentials. Locked files are reported and may remain.

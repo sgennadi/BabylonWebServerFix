@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.1 — unreleased development (2026-10-28)
+
+- Add `--msi-url` to handle future official Microsoft URL Rewrite downloads without recompiling the utility.
+- Prefer the offline Microsoft-signed MSI beside the EXE, with explicit `--msi` support for UNC deployment shares.
+- Fail closed with actionable offline installation instructions if the download URL is unavailable; do not use third-party mirrors.
+- Validate HTTPS Microsoft download hosts for URL overrides and limit download size.
+- Add regression tests for offline priority, UNC paths, updated HTTPS URL, invalid hosts and conflicting sources.
+- Existing registered IIS RewriteModule remains untouched regardless of module version.
+
+
 ## 1.0.0 — first stable release (2026-10-28)
 
 - Promote the tested Babylon Pro 12 / IIS / Apache-XAMPP compatibility workflow to the first stable Windows x64 CLI release.
