@@ -32,7 +32,8 @@ public static class Program
         try
         {
             // Do not create a log file if neither web server is installed.
-            var apache = ApacheService.Detect(options);
+            // IIS-only cleanup must not inspect or depend on Apache installations.
+            var apache = options.Action == "remove-iis" ? null : ApacheService.Detect(options);
             var iisFound = IisService.IsInstalled;
             if (!iisFound && apache is null)
             {

@@ -1,4 +1,4 @@
-# Validation matrix for stable 1.0.0 / v1.0.1 development
+# Validation matrix for stable 1.0.0 / v1.0.2 development
 
 The CLI must compile on `windows-2025` with .NET 10 before testing.
 
@@ -6,6 +6,10 @@ The CLI must compile on `windows-2025` with .NET 10 before testing.
 |---|---|---|
 | Windows workstation without IIS/Apache | `install` makes no changes, does not delete cache, does not create log | [ ] |
 | IIS only, W3SVC stopped | Adds rule without starting W3SVC | [ ] |
+| IIS native mode, URL Rewrite absent | `install --iis-mode native` adds named Request Filtering rule without MSI | [ ] Windows IIS integration test pending |
+| IIS native mode, Babylon translation | Babylon translates with IIS HTTP 404.19 filtering active | [ ] Requires real Babylon test |
+| IIS native mode, website | Ordinary `http://localhost/` works; Babylon query denied with 404.19 | [ ] Needs live HTTP test |
+| `remove-iis` | Removes only managed IIS rules, not Apache/cache | [ ] Needs integration test; parser covered by smoke tests |
 | IIS missing RewriteModule, MSI stored beside the EXE | Use signed local MSI without contacting Microsoft URL | [ ] Source precedence covered by offline smoke test; target-machine test pending |
 | IIS missing RewriteModule, custom official URL | Use `--msi-url` with Microsoft HTTPS direct MSI | [ ] URL validation unit-tested; network installation with new URL not yet verified |
 | IIS missing RewriteModule, default Microsoft URL unavailable | Fail with offline UNC instructions, never silently proceed | [ ] Error path logic reviewed; target-machine network failure not reproduced |

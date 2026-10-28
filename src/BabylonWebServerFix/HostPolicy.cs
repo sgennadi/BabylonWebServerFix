@@ -9,6 +9,11 @@ public static class HostPolicy
     public const string HostPattern = @"^localhost(:80)?$";
     public const string QueryPattern = @"^uid=[0-9]+&ver=12000&bld=13&iev=11(&|$)";
     public const string UrlPattern = "^$";
+    public const string NativeIisRuleName = "Babylon12-Compatibility-Native";
+    // Native Request Filtering cannot apply host/path conditions. Query substring is site-wide.
+    public const string NativeIisQuerySequence = "&ver=12000&bld=13&iev=11";
+    public static bool NativeIisMatches(string query) =>
+        query.Contains(NativeIisQuerySequence, StringComparison.OrdinalIgnoreCase);
     public const string ApacheFileName = "babylon12-localhost-compat.conf";
     public const string BeginMarker = "# BEGIN Babylon12-Localhost-Compatibility";
     public const string EndMarker = "# END Babylon12-Localhost-Compatibility";

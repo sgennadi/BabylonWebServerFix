@@ -28,10 +28,34 @@ internal sealed class IisService(CliOptions options, DeployLog log)
                 _log.Info($"Binding: {binding.Protocol} {binding.BindingInformation}");
 
             var moduleFound = HasRewriteModule(manager);
-            if (moduleFound || mode != "install")
+            var native = new IisNativeRequestFiltering(_options, _log);
+            if (mode == "status")
             {
-                if (!moduleFound) _log.Warn("IIS RewriteModule missing; no rule to inspect or remove.");
-                else ApplyRule(manager, mode);
+                if (moduleFound) ApplyRule(manager, "status");
+                else _log.Info("IIS RewriteModule not installed.");
+                native.Apply(manager, "status");
+                return;
+            }
+            if (mode == "remove")
+            {
+                if (moduleFound) ApplyRule(manager, "remove");
+                else _log.Info("IIS URL Rewrite compatibility rule absent (module not installed).");
+                // CommitChanges updates configuration; reload before a second edit.
+                using var fresh = new ServerManager();
+                native.Apply(fresh, "remove");
+                return;
+            }
+            if (_options.IisMode == "native")
+            {
+                if (moduleFound && HasManagedRewriteRule(manager))
+                    _log.Warn("Existing URL Rewrite compatibility rule may intercept Babylon first. " +
+                              "For a native-only trial, run remove-iis before installing --iis-mode native.");
+                native.Apply(manager, "install");
+                return;
+            }
+            if (moduleFound)
+            {
+                ApplyRule(manager, "install");
                 return;
             }
             if (_options.DryRun)
@@ -103,6 +127,16 @@ internal sealed class IisService(CliOptions options, DeployLog log)
         rules.AddAt(0, newRule);
         manager.CommitChanges();
         _log.Info("Installed IIS rule: " + HostPolicy.RuleName);
+    }
+
+    private bool HasManagedRewriteRule(ServerManager manager)
+    {
+        var collection = manager.GetApplicationHostConfiguration()
+            .GetSection("system.webServer/rewrite/rules", _options.Site).GetCollection();
+        foreach (ConfigurationElement item in collection)
+            if (string.Equals(Convert.ToString(item.GetAttributeValue("name")),
+                HostPolicy.RuleName, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
     }
 
     private static bool HasRewriteModule(ServerManager manager)

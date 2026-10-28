@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.2 — unreleased development (2026-10-28)
+
+- Opt-in `--iis-mode native` uses built-in IIS Request Filtering without downloading/installing URL Rewrite.
+- Creates a named, removable filter for the Babylon 12 query substring, with HTTP 404.19 and IIS configuration backup.
+- Add `remove-iis` to remove only managed IIS compatibility rules, preserving Apache and WinINet.
+- Show both IIS compatibility rules in `status`; preserve URL Rewrite as the default.
+- The native filter is intentionally experimental until translation is verified on a workstation.
+
+
 ## 1.0.1 — unreleased development (2026-10-28)
 
 - Add `--msi-url` to handle future official Microsoft URL Rewrite downloads without recompiling the utility.

@@ -6,6 +6,7 @@ public sealed record CliOptions
 {
     public string Action { get; private set; } = "install";
     public string Site { get; private set; } = "Default Web Site";
+    public string IisMode { get; private set; } = "rewrite";
     public string? MsiPath { get; private set; }
     public Uri? MsiUrl { get; private set; }
     public string? ApacheHttpdPath { get; private set; }
@@ -29,7 +30,7 @@ public sealed record CliOptions
             o.Action = args[0].ToLowerInvariant();
             i++;
         }
-        if (o.Action is not ("install" or "status" or "remove" or "cache-only" or "restart-apache"))
+        if (o.Action is not ("install" or "status" or "remove" or "remove-iis" or "cache-only" or "restart-apache"))
             throw new ArgumentException("Unknown command: " + o.Action);
 
         string NeedValue()
@@ -43,6 +44,7 @@ public sealed record CliOptions
             switch (args[i].ToLowerInvariant())
             {
                 case "--site": o.Site = NeedValue(); break;
+                case "--iis-mode": o.IisMode = NeedValue().ToLowerInvariant(); break;
                 case "--msi": o.MsiPath = NeedValue(); break;
                 case "--msi-url": o.MsiUrl = RewriteInstallerPolicy.ParseMicrosoftDownloadUrl(NeedValue()); break;
                 case "--apache-httpd": o.ApacheHttpdPath = NeedValue(); break;
@@ -60,6 +62,7 @@ public sealed record CliOptions
             }
         }
         if (string.IsNullOrWhiteSpace(o.Site)) throw new ArgumentException("--site must not be empty");
+        if (o.IisMode is not ("rewrite" or "native")) throw new ArgumentException("--iis-mode must be rewrite or native");
         if (o.MsiPath is not null && o.MsiUrl is not null) throw new ArgumentException("--msi and --msi-url cannot be combined");
         if (o.LogPath != null && !o.EnableLog) throw new ArgumentException("--log-path requires --enable-log");
         if (o.CleanupNextLogon && o.Action is not ("install" or "cache-only"))
@@ -77,11 +80,14 @@ public sealed record CliOptions
           BabylonWebServerFix.exe install           [options]
           BabylonWebServerFix.exe status            [options]
           BabylonWebServerFix.exe remove            [options]
+          BabylonWebServerFix.exe remove-iis        [options]
           BabylonWebServerFix.exe cache-only        [options]
           BabylonWebServerFix.exe restart-apache    [options]
 
         Options:
           --site "Default Web Site"     IIS site name
+          --iis-mode rewrite|native     IIS URL Rewrite (default) or experimental
+                                        native Request Filtering (without MSI)
           --msi PATH                    Offline Microsoft-signed MSI (local / network share)
           --msi-url HTTPS_URL           Updated direct Microsoft .msi download URL
           --apache-httpd PATH           Exact Apache httpd.exe if detection is ambiguous
@@ -100,5 +106,7 @@ public sealed record CliOptions
         If neither IIS nor Apache is present: do nothing (including cache cleanup).
         IIS installer search: --msi, then --msi-url, then MSI beside EXE, then Microsoft URL.
         An installed RewriteModule is reused; no automatic upgrade is attempted.
+        Native IIS mode blocks a Babylon query substring site-wide with HTTP 404.19.
+        remove-iis cleans only the managed IIS rules, not Apache or cache.
         """;
 }

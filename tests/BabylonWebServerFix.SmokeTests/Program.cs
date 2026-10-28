@@ -120,4 +120,24 @@ try { CliOptions.Parse(["install", "--msi", @"C:\rewrite.msi", "--msi-url", alte
 catch (ArgumentException) { rejectedConflict = true; }
 Expect(rejectedConflict, "offline MSI and URL source conflict rejected");
 
+Expect(CliOptions.Parse([]).IisMode == "rewrite", "default IIS mode unchanged");
+Expect(CliOptions.Parse(["install", "--iis-mode", "native"]).IisMode == "native",
+    "explicit IIS native mode parsed");
+Expect(CliOptions.Parse(["install", "--iis-mode", "NATIVE"]).IisMode == "native",
+    "IIS native option is case-insensitive");
+Expect(CliOptions.Parse(["remove-iis"]).Action == "remove-iis",
+    "remove-iis CLI action parsed");
+bool rejectedMode = false;
+try { CliOptions.Parse(["install", "--iis-mode", "unknown"]); }
+catch (ArgumentException) { rejectedMode = true; }
+Expect(rejectedMode, "unsupported IIS mode rejected");
+Expect(HostPolicy.NativeIisMatches(exact), "native IIS query matches Babylon 12");
+Expect(HostPolicy.NativeIisMatches("uid=314&ver=12000&bld=13&iev=11"),
+    "native query accepts dynamic UID");
+Expect(!HostPolicy.NativeIisMatches(""), "normal homepage unaffected");
+Expect(!HostPolicy.NativeIisMatches("uid=0&ver=13000&bld=13&iev=11"),
+    "different Babylon version unaffected");
+Expect(HostPolicy.NativeIisRuleName != HostPolicy.RuleName,
+    "native IIS and URL Rewrite rule identifiers differ");
+
 Console.WriteLine($"Passed {count} smoke tests.");

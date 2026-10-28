@@ -25,6 +25,10 @@ internal sealed class Deployment(CliOptions options, DeployLog log, ApacheTarget
                 if (apache is not null) await apache.RestartAsync();
                 else _log.Info("Apache not found; nothing to restart.");
                 break;
+            case "remove-iis":
+                if (_iisPresent) await iis.ApplyAsync("remove");
+                else _log.Info("IIS is absent; no managed IIS rules to remove.");
+                break;
             case "remove":
                 if (_iisPresent) await iis.ApplyAsync("remove");
                 if (apache is not null) await apache.ApplyAsync("remove");
