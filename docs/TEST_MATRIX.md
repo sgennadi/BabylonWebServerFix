@@ -1,9 +1,12 @@
-# Validation matrix for stable 1.0.4
+# Validation matrix for stable 1.0.5
 
 The CLI must compile on `windows-2025` with .NET 10 before testing.
 
 | Scenario | Expected outcome | Checked |
 |---|---|---|
+| EXE without arguments | Show help and usage examples, exit successfully, make no configuration changes | [x] Automated CLI smoke test and release workflow validation |
+| EXE with `/?`, `-h` or `--help` | Show help and examples, without requiring elevation or changing IIS/Apache | [x] Automated CLI smoke tests and release workflow validation |
+| Explicit `install` required | Install only when `install` is supplied; no-argument invocation does not install | [x] Automated CLI smoke test |
 | Windows workstation without IIS/Apache | `install` makes no changes, does not delete cache, does not create log | [ ] |
 | IIS only, W3SVC stopped | Adds rule without starting W3SVC | [ ] |
 | IIS native mode, URL Rewrite absent | `install --iis-mode native` adds named Request Filtering rule without MSI | [x] 2026-10-28 BASE-IMAGE: IIS Started, named native filter installed with no MSI download |
@@ -47,5 +50,7 @@ The CLI must compile on `windows-2025` with .NET 10 before testing.
 | `--skip-cache` | Skips cache cleanup and still handles optional Babylon restart | [ ] |
 | `remove` | Only managed rules / Active Setup removed | [ ] |
 | Unsigned build SmartScreen behavior | Confirm deployment policies allow the exe, or sign release | [ ] |
+
+**v1.0.5 behavior:** No arguments, `/?`, `-h`, and `--help` display help with examples. All installation and configuration changes require an explicit command such as `install`. The existing IIS and Apache compatibility scenarios below remain relevant.
 
 **Stable release scope:** the verified workflow covers Babylon Pro 12 with an active IIS site or XAMPP console Apache on a Windows test workstation. Test other scenarios locally before mass deployment. **Do not distribute broadly until items relevant to the deployment are tested.** A 2026-10-28 BASE-IMAGE run reported success for the C# IIS URL Rewrite installation path while W3SVC was started, including MSI exit code 0, rule installation, Babylon process restart and WinINet cache cleanup without errors. Translation with IIS active was subsequently confirmed by the user; the deployed EXE's SHA-256 exactly matches the public v0.1.3 Preview release. Both directions of switching between the two Babylon IIS rule types succeeded on BASE-IMAGE at 09:33 and 09:34; the translated output after the latest 09:34 run was not independently shown. A normal IIS `http://localhost/` response, downloaded MSI file deletion, and the cause of the original 09:33 MSI redownload remain unverified. A later v1.0.4 dry-run on BASE-IMAGE correctly detected the already-registered RewriteModule and skipped the installer without changing IIS. On the same workstation, `status` reported Rewrite absent and native present; `remove-iis` then removed the native rule with an IIS backup, and a second `status` confirmed both rules absent while IIS stayed Started. No Babylon translation test was supplied after removing both rules. Apache and Babylon translation were observed together on another workstation test; Apache HTTP 403 behavior and repeat-install idempotence still require targeted workstation validation.
