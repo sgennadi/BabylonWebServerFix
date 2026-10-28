@@ -50,7 +50,7 @@ Babylon Pro 12 translation **worked on a test workstation with IIS running** aft
 BabylonWebServerFix.exe install --iis-mode rewrite
 ```
 
-This installs or reuses Microsoft URL Rewrite, creates the managed Rewrite rule, and **then removes the managed native filtering rule**, so the two rules do not remain active together. If the MSI cannot be downloaded, the existing native rule remains in place. To use an offline installer, place the signed MSI beside the EXE or use `--msi PATH`; supplying `--msi` or `--msi-url` without `--iis-mode` automatically selects Rewrite.
+This installs or reuses Microsoft URL Rewrite, creates the managed Rewrite rule, and **then removes the managed native filtering rule**, so the two rules do not remain active together. **Verified on BASE-IMAGE on 2026-10-28:** an official Microsoft MSI was downloaded and installed successfully (exit 0), the Rewrite rule was created, the native rule was removed, Babylon restarted, and the user confirmed translation works. If the MSI download or installation fails, the existing native rule is intended to remain in place; this failure path has not yet been tested on a workstation. To use an offline installer, place the signed MSI beside the EXE or use `--msi PATH`; supplying `--msi` or `--msi-url` without `--iis-mode` automatically selects Rewrite.
 
 Switching back to default native filtering is equally simple:
 
@@ -62,7 +62,7 @@ The native rule is installed or verified **before** the managed URL Rewrite rule
 
 `status` reports both managed IIS rule types. `remove-iis` removes both managed IIS rules without touching Apache or the WinINet cache. `remove` also removes the application's other managed settings. IIS Request Filtering must be enabled as a Windows IIS feature.
 
-**Deployment note:** this behavior is in the unreleased development build, not the published v1.0.0 Stable. Test switching modes on a workstation before wider deployment.
+**Deployment note:** this behavior is in the unreleased development build, not the published v1.0.0 Stable. The Native → Rewrite migration and translation are now verified on one test workstation. Rewrite → Native, error-path rollback, and normal localhost page responses still require separate checks before wider deployment.
 
 ## Quick start (Command Prompt / CMD)
 

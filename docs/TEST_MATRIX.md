@@ -9,7 +9,7 @@ The CLI must compile on `windows-2025` with .NET 10 before testing.
 | IIS native mode, URL Rewrite absent | `install --iis-mode native` adds named Request Filtering rule without MSI | [x] 2026-10-28 BASE-IMAGE: IIS Started, named native filter installed with no MSI download |
 | IIS native mode, Babylon translation | Babylon translates after native filtering was installed with IIS running | [x] 2026-10-28 BASE-IMAGE: user confirmed translation works. Brief initial error page with red text appeared before normal Babylon window |
 | Default IIS mode with no MSI | Plain `install` chooses native filtering without a URL Rewrite download | [x] CLI smoke test; Windows IIS integration test for the new default pending |
-| Migration native -> rewrite | Explicit `--iis-mode rewrite` installs Rewrite rule then removes only the managed native IIS rule | [ ] Needs target-machine integration test; rewrite installation failure keeps native |
+| Migration native -> rewrite | Explicit `--iis-mode rewrite` installs Microsoft URL Rewrite and the Babylon rule, then removes the managed native IIS rule | [x] 2026-10-28 BASE-IMAGE, v1.0.3 development EXE: IIS Started, HTTP *:80, signed MSI exit=0, Rewrite rule installed, native rule removed, cache cleanup failures=0, Babylon restarted and user confirmed translation. Failure rollback not tested |
 | Migration rewrite -> native | Plain `install` prepares native rule first, then removes only the managed Rewrite rule | [ ] Needs target-machine integration test |
 | Repeated native install | No IIS backup/changes when the native Babylon rule already matches | [ ] Needs workstation retest |
 | IIS native mode, website | Ordinary `http://localhost/` works; Babylon query denied with 404.19 | [ ] Needs live HTTP test |
