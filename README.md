@@ -30,6 +30,12 @@ The two *Babylon UI loading modes* above are distinct from the tool's **two IIS 
 
 Apache/XAMPP has its own conditional HTTP 403 compatibility rule. Neither IIS implementation is needed when updated Babylon works normally without it.
 
+## Publishing v1.0.4 Stable (maintainer)
+
+The source version is v1.0.4; the published release remains v1.0.0 **until the release workflow succeeds**. The manual [Stable release workflow](https://github.com/sgennadi/BabylonWebServerFix/actions/workflows/stable-release.yml) builds from `main`, runs smoke tests, creates or updates the v1.0.4 release, verifies that `BabylonWebServerFix.exe` and `SHA256SUMS.txt` are attached, and **only then** deletes the old v1.0.0 and v0.1.3-preview.1 releases and their tags.
+
+If the default `GITHUB_TOKEN` receives `HTTP 403: Resource not accessible by integration`, the repository maintainer must grant Actions **Read and write permissions** or provide a fine-grained token in the repository Actions secret `RELEASE_TOKEN` with **Contents: Read and write** on this repository. Do not publish or delete releases unless that authorization is in place. From **Actions → Stable release → Run workflow**, choose `main` and the tag `v1.0.4`. Verify the release assets after it completes.
+
 ## Download the Windows EXE
 
 1. Open **[v1.0.0 Stable Release](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.0)** and download `BabylonWebServerFix.exe` and optional `SHA256SUMS.txt` from **Assets**.
