@@ -31,6 +31,14 @@ public static class Program
         }
         try
         {
+            // Explicit fixed-Babylon confirmation must be a no-op even without a web server.
+            if (options.Action == "install" && options.FixedBabylon)
+            {
+                using var fixedLog = new DeployLog(options);
+                BabylonUiDetection.WriteStatus(fixedLog);
+                fixedLog.Info("Confirmed fixed Babylon (--fixed-babylon): no changes made.");
+                return 0;
+            }
             // Do not create a log file if neither web server is installed.
             // IIS-only cleanup must not inspect or depend on Apache installations.
             var apache = options.Action == "remove-iis" ? null : ApacheService.Detect(options);
