@@ -50,7 +50,7 @@ Babylon Pro 12 translation **worked on a test workstation with IIS running** aft
 BabylonWebServerFix.exe install --iis-mode rewrite
 ```
 
-This installs or reuses Microsoft URL Rewrite, creates the managed Rewrite rule, and **then removes the managed native filtering rule**, so the two rules do not remain active together. **Verified on BASE-IMAGE on 2026-10-28:** an official Microsoft MSI was downloaded and installed successfully (exit 0), the Rewrite rule was created, the native rule was removed, Babylon restarted, and the user confirmed translation works. If the MSI download or installation fails, the existing native rule is intended to remain in place; this failure path has not yet been tested on a workstation. To use an offline installer, place the signed MSI beside the EXE or use `--msi PATH`; supplying `--msi` or `--msi-url` without `--iis-mode` automatically selects Rewrite.
+This installs or reuses Microsoft URL Rewrite, creates the managed Rewrite rule, and **then removes the managed native filtering rule**, so the two rules do not remain active together. **Verified on BASE-IMAGE on 2026-10-28:** an official Microsoft MSI was downloaded and installed successfully (exit 0), the Rewrite rule was created, the native rule was removed, Babylon restarted, and the user confirmed translation works. If the MSI download or installation fails, the existing native rule is intended to remain in place; this failure path has not yet been tested on a workstation. To use an offline installer, place the signed MSI beside the EXE or use `--msi PATH`; supplying `--msi` or `--msi-url` without `--iis-mode` automatically selects Rewrite. **Note:** the 09:33 test downloaded the MSI even though an earlier test had installed URL Rewrite. We have not verified whether the module was removed, unregistered, or misdetected between tests. Reuse without downloading remains an open integration check.
 
 Switching back to default native filtering is equally simple:
 
@@ -58,11 +58,11 @@ Switching back to default native filtering is equally simple:
 BabylonWebServerFix.exe install
 ```
 
-The native rule is installed or verified **before** the managed URL Rewrite rule is removed. No Microsoft module is uninstalled; only this project's rules are changed. Both migrations back up IIS configuration before changes.
+The native rule is installed or verified **before** the managed URL Rewrite rule is removed. No Microsoft module is deliberately uninstalled; only this project's rules are changed. Both migrations back up IIS configuration before changes. **On 2026-10-28 at 09:34, this exact reverse migration was confirmed in a real BASE-IMAGE log**: native rule installed, previous Rewrite rule removed and IIS remained Started.
 
 `status` reports both managed IIS rule types. `remove-iis` removes both managed IIS rules without touching Apache or the WinINet cache. `remove` also removes the application's other managed settings. IIS Request Filtering must be enabled as a Windows IIS feature.
 
-**Deployment note:** this behavior is in the unreleased development build, not the published v1.0.0 Stable. The Native → Rewrite migration and translation are now verified on one test workstation. Rewrite → Native, error-path rollback, and normal localhost page responses still require separate checks before wider deployment.
+**Deployment note:** this behavior is in the unreleased development build, not the published v1.0.0 Stable. **Both migration directions have now passed on BASE-IMAGE** (Native → Rewrite at 09:33 and Rewrite → Native at 09:34 on 2026-10-28). The earlier Rewrite migration also passed a live Babylon translation check. Babylon was restarted after the 09:34 native migration, but the translation result after that specific run was not independently provided. Repeated-install idempotence, error-path rollback and normal localhost page responses still need checking.
 
 ## Quick start (Command Prompt / CMD)
 

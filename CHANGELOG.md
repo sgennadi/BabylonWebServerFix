@@ -8,6 +8,7 @@
 - Add bidirectional migration: switch to native only after its rule is installed, removing the old Babylon URL Rewrite rule; switch to URL Rewrite only after that rule is installed, then removing the native Babylon filtering rule.
 - Preserve Microsoft URL Rewrite module itself (no module uninstall or unnecessary download); make `--iis-mode rewrite` opt-in, while explicit `--msi` or `--msi-url` selects Rewrite.
 - Add CLI and regression tests for default mode, explicit alternatives and conflicting option combinations.
+- Workstation evidence on 2026-10-28: both directions of automatic managed IIS rule migration completed without errors (Native → Rewrite at 09:33 and Rewrite → Native at 09:34). Reuse of a previously installed RewriteModule still needs diagnosis: the 09:33 run downloaded the MSI again.
 
 
 ## 1.0.2 — unreleased development (2026-10-28)
