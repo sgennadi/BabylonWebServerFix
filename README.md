@@ -6,6 +6,30 @@
 
 Babylon 12 embeds an MSHTML-based viewer that may request `http://localhost/?uid=...&ver=12000&bld=13&iev=11...`. A local web server can intercept that URL and replace Babylon's interface with a site response. This tool configures narrowly scoped server rules and optionally cleans temporary WinINet files without changing IP addresses, port bindings, Babylon installation files or licenses.
 
+## When to use this tool: Babylon UI modes (verified 2026-10-28)
+
+Babylon Pro 12 has been observed using **two different MSHTML document URLs**. These are *runtime observations*, not a reliable product version check; the LocalUI HTML file itself has a 2023 timestamp.
+
+| Mode | Embedded document URL | What to do |
+|---|---|---|
+| Legacy localhost HTTP | `http://localhost/?uid=0&ver=12000&bld=13&iev=11&lngs=14,0,15,3,1,7` | If IIS/Apache listens on port 80 and Babylon shows the web server page or translation breaks, this compatibility utility can be used. |
+| Local-file HTML | `file://C:\\ProgramData\\Babylon\\LocalUI\\wnd.html?uid=0&ver=12000&bld=13&iev=11&lngs=14,0,15,3,1,7` | If translation works with IIS/Apache running **without** the compatibility rules, **do not run install**. Nothing needs fixing. |
+
+A second local document was observed: `file://C:\\Users\\Student\\AppData\\Local\\Temp\\BWebData.html` (user profile path varies). The local-file mode still uses MSHTML, and bundled JavaScript contains remote HTTP service URLs. Loading the main UI from a file **does not prove that Babylon makes zero network connections**, nor does the presence of `wnd.html` alone prove a fixed build.
+
+**Real-world validation (BASE-IMAGE, 2026-10-28):** IIS was running on TCP/80; both managed IIS rules were absent after `remove-iis`; Babylon displayed a local-file UI and translation worked normally. No compatibility fix was needed on that workstation. This confirms the result for the tested installation, not for every version of Babylon.
+
+**Decision rule:** First try Babylon translation while IIS/Apache is running and with no BabylonWebServerFix rules. If it works, leave the system alone. If the old `http://localhost/?uid=...` behavior causes a conflict, run `status`, then `install --dry-run`, and only then `install` as administrator. Do not switch modes solely because the file `LocalUI\\wnd.html` exists.
+
+### Two IIS compatibility implementations (only for the problematic localhost HTTP mode)
+
+The two *Babylon UI loading modes* above are distinct from the tool's **two IIS rule implementations**:
+
+- **Native Request Filtering (default):** `BabylonWebServerFix.exe install`; no separate MSI, sends HTTP 404.19 for Babylon query substring. Matches site-wide query strings (not only localhost) and may flash an HTTP error briefly.
+- **Microsoft URL Rewrite (opt-in):** `BabylonWebServerFix.exe install --iis-mode rewrite`; aborts the targeted localhost request; needs a registered Microsoft RewriteModule, which is reused if already present.
+
+Apache/XAMPP has its own conditional HTTP 403 compatibility rule. Neither IIS implementation is needed when updated Babylon works normally without it.
+
 ## Download the Windows EXE
 
 1. Open **[v1.0.4 Stable Release](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.4)** and download `BabylonWebServerFix.exe` and optional `SHA256SUMS.txt` from **Assets**.
