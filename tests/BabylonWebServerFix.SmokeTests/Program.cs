@@ -54,4 +54,33 @@ try { _ = CliOptions.Parse(["install", "--skip-cache", "--cleanup-next-logon"]);
 catch (ArgumentException) { incompatibleRejected = true; }
 Expect(incompatibleRejected, "conflicting cache flags rejected");
 
+Expect(AuthenticodeVerifier.IsMicrosoftPublisherName(
+        "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, C=US"),
+    "Microsoft publisher organization accepted");
+Expect(AuthenticodeVerifier.IsMicrosoftPublisherName(
+        "CN=Code Signing, O=Microsoft Corporation, C=US"),
+    "Microsoft publisher organization accepted without matching CN");
+Expect(!AuthenticodeVerifier.IsMicrosoftPublisherName(
+        "CN=Microsoft Corporation Fake, O=Untrusted Corp"),
+    "lookalike publisher rejected");
+Expect(!AuthenticodeVerifier.IsMicrosoftPublisherName(
+        "CN=Fake, O=Not Microsoft Corporation"),
+    "publisher substring not accepted");
+Expect(!AuthenticodeVerifier.IsMicrosoftPublisherName(
+        "CN=Microsoft Corporation, O=Untrusted Corp"),
+    "spoofed CN without Microsoft organization rejected");
+if (OperatingSystem.IsWindows())
+{
+    var unsignedPackage = Path.Combine(Path.GetTempPath(), "BWSF-unsigned-" + Guid.NewGuid().ToString("N") + ".msi");
+    try
+    {
+        File.WriteAllText(unsignedPackage, "unsigned test payload");
+        bool rejected = false;
+        try { AuthenticodeVerifier.RequireMicrosoftSignature(unsignedPackage); }
+        catch (System.Security.SecurityException) { rejected = true; }
+        Expect(rejected, "unsigned MSI rejected by native WinTrust (no PowerShell)");
+    }
+    finally { if (File.Exists(unsignedPackage)) File.Delete(unsignedPackage); }
+}
+
 Console.WriteLine($"Passed {count} smoke tests.");

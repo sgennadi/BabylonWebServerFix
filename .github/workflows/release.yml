@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Preview release tag, e.g. v0.1.0-preview.1 (must exist)'
+        description: 'Preview release tag, e.g. v0.1.3-preview.1 (must exist)'
         required: true
         type: string
 
@@ -22,18 +22,17 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - name: Build + smoke test
-        shell: pwsh
+        shell: cmd
         run: |
           dotnet build src/BabylonWebServerFix/BabylonWebServerFix.csproj -c Release
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if errorlevel 1 exit /b 1
           dotnet run --project tests/BabylonWebServerFix.SmokeTests/BabylonWebServerFix.SmokeTests.csproj -c Release
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if errorlevel 1 exit /b 1
           dotnet publish src/BabylonWebServerFix/BabylonWebServerFix.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=false -o dist
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if errorlevel 1 exit /b 1
       - name: Publish unsigned preview
-        shell: pwsh
+        shell: cmd
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
-        run: |
-          gh release create "$env:TAG" "dist/BabylonWebServerFix.exe" --title "$env:TAG" --prerelease --notes "Unsigned preview build. Validate IIS, Apache/XAMPP and Babylon on one test computer before deploying." --verify-tag
+        run: gh release create "%TAG%" "dist/BabylonWebServerFix.exe" --title "%TAG%" --prerelease --notes "Unsigned preview build. Validate IIS, Apache/XAMPP and Babylon on one test computer before deploying." --verify-tag

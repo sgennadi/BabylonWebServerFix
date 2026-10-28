@@ -1,4 +1,3 @@
-using System.Security;
 using Microsoft.Web.Administration;
 
 namespace BabylonWebServerFix.Services;
@@ -152,12 +151,9 @@ internal sealed class IisService(CliOptions options, DeployLog log)
             }
             package = Path.GetFullPath(package);
             if (!File.Exists(package)) throw new FileNotFoundException("URL Rewrite MSI missing", package);
-            var quoted = package.Replace("'", "''", StringComparison.Ordinal);
-            var signatureCommand = "$s=Get-AuthenticodeSignature -LiteralPath '" + quoted +
-                "';if($s.Status -eq 'Valid' -and $s.SignerCertificate -and $s.SignerCertificate.Subject -match 'Microsoft Corporation'){exit 0}else{exit 1}";
-            var signature = await WindowsSystem.RunAsync(WindowsSystem.SystemExecutable("WindowsPowerShell\\v1.0\\powershell.exe"),
-                ["-NoProfile", "-NonInteractive", "-Command", signatureCommand], 45);
-            if (signature.ExitCode != 0) throw new SecurityException("MSI signature is not valid Microsoft Authenticode.");
+            // Verify Authenticode trust and the Microsoft signer using WinTrust.
+            // No PowerShell process or script execution is required.
+            AuthenticodeVerifier.RequireMicrosoftSignature(package);
             _log.Info("Installing signed URL Rewrite MSI: " + package);
             var install = await WindowsSystem.RunAsync(WindowsSystem.SystemExecutable("msiexec.exe"),
                 ["/i", package, "/qn", "/norestart"], 240);

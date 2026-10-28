@@ -50,7 +50,7 @@ internal sealed class Deployment(CliOptions options, DeployLog log, ApacheTarget
     }
 
     // Even if cache cleanup was opted out, complete an optional Babylon
-    // restart after web-server changes (same behavior as the PowerShell v10).
+    // restart after web-server changes (preserves compatibility while skipping cache).
     private async Task RestartBabylonOnlyAsync()
     {
         var babylon = new BabylonRestart(_options, _log);

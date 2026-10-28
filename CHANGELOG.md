@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.3-preview (2026-10-28)
+
+- Replace the runtime PowerShell signer check with native Windows WinTrust verification plus Microsoft publisher identity validation for IIS URL Rewrite MSI files.
+- Keep MSI verification fail-closed; reject invalid or non-Microsoft signatures and add negative signature and publisher-name regression tests.
+- Rework README for an existing GitHub repository, with EXE-only CMD examples, download/build instructions and no obsolete repository-creation steps.
+- Clarify preview verification limits and service restart behavior; retain prior PowerShell source only as a historical reference under legacy/.
+- Update preview-release workflow to use CMD rather than PowerShell commands.
+
+
 ## 0.1.2-preview (2026-10-28)
 
 - Fix idempotence: repeated `install` no longer restarts Apache when the managed include and rule are unchanged.
@@ -28,6 +37,6 @@
 - Restart Babylon in its original user session only when it was already running.
 - Windows GitHub Actions build and standalone unsigned preview artifact.
 
-This is **not** a stable release. Windows build and real Apache/Babylon translation verification are pending.
+This remains a **preview**. Windows CI builds and a single workstation Apache/Babylon translation test have passed; broader IIS and Apache integration testing remains outstanding.
 
 - Use NuGet `Microsoft.Web.Administration` 11.1.0 with typed IIS API instead of loading the legacy .NET Framework assembly at runtime.
