@@ -120,7 +120,28 @@ try { CliOptions.Parse(["install", "--msi", @"C:\rewrite.msi", "--msi-url", alte
 catch (ArgumentException) { rejectedConflict = true; }
 Expect(rejectedConflict, "offline MSI and URL source conflict rejected");
 
-Expect(CliOptions.Parse([]).IisMode == "rewrite", "default IIS mode unchanged");
+Expect(CliOptions.Parse([]).IisMode == "native", "default IIS mode does not require URL Rewrite MSI");
+Expect(CliOptions.Parse(["install"]).IisMode == "native", "default install uses native filtering");
+Expect(CliOptions.Parse(["status"]).IisMode == "native", "status defaults to native mode");
+Expect(CliOptions.Parse(["install", "--iis-mode", "rewrite"]).IisMode == "rewrite",
+    "explicit URL Rewrite remains selectable");
+Expect(CliOptions.Parse(["install", "--msi", @"C:\Installers\rewrite_amd64_en-US.msi"]).IisMode == "rewrite",
+    "explicit offline MSI automatically selects URL Rewrite");
+Expect(CliOptions.Parse(["install", "--msi-url",
+    "https://download.microsoft.com/download/new/rewrite_amd64_en-US.msi"]).IisMode == "rewrite",
+    "explicit Microsoft MSI URL selects URL Rewrite");
+bool rejectedNativeMsi = false;
+try { CliOptions.Parse(["install", "--iis-mode", "native", "--msi", @"C:\Installers\rewrite.msi"]); }
+catch (ArgumentException) { rejectedNativeMsi = true; }
+Expect(rejectedNativeMsi, "explicit native and MSI path cannot conflict");
+bool rejectedNativeUrl = false;
+try { CliOptions.Parse(["install", "--msi-url",
+    "https://download.microsoft.com/download/new/rewrite.msi", "--iis-mode", "native"]); }
+catch (ArgumentException) { rejectedNativeUrl = true; }
+Expect(rejectedNativeUrl, "explicit native mode rejects conflicting URL installer");
+Expect(CliOptions.Parse(["install", "--iis-mode", "rewrite", "--msi",
+    @"C:\Installers\rewrite.msi"]).IisMode == "rewrite",
+    "explicit rewrite and MSI file are compatible");
 Expect(CliOptions.Parse(["install", "--iis-mode", "native"]).IisMode == "native",
     "explicit IIS native mode parsed");
 Expect(CliOptions.Parse(["install", "--iis-mode", "NATIVE"]).IisMode == "native",

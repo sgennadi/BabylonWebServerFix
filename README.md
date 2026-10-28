@@ -2,7 +2,7 @@
 
 **Windows x64 utility for Babylon Pro 12 compatibility with Microsoft IIS and Apache/XAMPP.**
 
-> **Latest release: v1.0.0 Stable.** The `main` branch contains unreleased **v1.0.2** development: offline installer fallback and an experimental MSI-free IIS Request Filtering mode. Babylon translation with native IIS filtering has not been tested.
+> **Latest published release: v1.0.0 Stable.** In `main`, **v1.0.3 Development** now defaults to built-in IIS Request Filtering without URL Rewrite. On 2026-10-28, Babylon Pro 12 translation succeeded with native filtering and IIS running on a test workstation. Switching between native and Rewrite modes cleans up only the project's previous IIS rule. Ordinary site responses and the brief initial Babylon error flash still need checking.
 
 Babylon 12 embeds an MSHTML-based viewer that may request `http://localhost/?uid=...&ver=12000&bld=13&iev=11...`. A local web server can intercept that URL and replace Babylon's interface with a site response. This tool configures narrowly scoped server rules and optionally cleans temporary WinINet files without changing IP addresses, port bindings, Babylon installation files or licenses.
 
@@ -30,23 +30,39 @@ Selection: use either an explicit `--msi` (local/UNC path) or an explicit `--msi
 
 For network deployments, make the shared MSI and EXE read-only to students; only administrators should be able to replace installers.
 
-## No URL Rewrite MSI: experimental native IIS mode
+## Default IIS mode: no URL Rewrite MSI
 
-Windows IIS includes the **Request Filtering** security module. An opt-in mode can configure a named built-in filtering rule instead of installing Microsoft URL Rewrite:
+The `main` development branch now uses IIS's built-in **Request Filtering** by default. This mode needs **no separate Microsoft URL Rewrite MSI** and does not download anything.
 
 ```cmd
 BabylonWebServerFix.exe status
-BabylonWebServerFix.exe install --iis-mode native --dry-run
-BabylonWebServerFix.exe install --iis-mode native --skip-cache --skip-babylon-restart
+BabylonWebServerFix.exe install --dry-run
+BabylonWebServerFix.exe install
 ```
 
-The rule is named `Babylon12-Compatibility-Native` and matches query text `&ver=12000&bld=13&iev=11`. It returns **HTTP 404.19**, not the `AbortRequest` connection termination used by URL Rewrite. This match covers **all paths and Host headers of the selected IIS site**; it cannot make the same strict localhost/root-only match as URL Rewrite. Normal `http://localhost/` without the query remains unaffected.
+Its named rule (`Babylon12-Compatibility-Native`) matches `&ver=12000&bld=13&iev=11` in the request query and returns HTTP **404.19**. The request is denied for *all paths and hostnames on the selected IIS site* if it contains the same substring. The normal `http://localhost/` without that query does not match. Unlike URL Rewrite, Request Filtering cannot limit this rule to just the Babylon request on localhost and the root path.
 
-If the site already has our managed URL Rewrite compatibility rule, it may still intercept the request. To test the native alternative alone, first run `BabylonWebServerFix.exe remove-iis`, which removes **only our IIS rules**, not Apache config or user cache. It does not uninstall the URL Rewrite module. Then install with `--iis-mode native`.
+Babylon Pro 12 translation **worked on a test workstation with IIS running** after installing the native rule on 2026-10-28. A brief flash of an error page with red text occurred at initial launch before Babylon displayed its normal window. This may be due to the HTTP error response and has not been eliminated. An ordinary `http://localhost/` page still needs explicit HTTP verification.
 
-`status` reports both managed IIS rule types. `remove` removes both managed IIS rules plus the application's other managed settings; `remove-iis` affects only IIS rules. The standard `install` without `--iis-mode` continues to use tested URL Rewrite behavior.
+### Switching back to Microsoft URL Rewrite
 
-**The native mode has not yet been verified to allow Babylon translation.** First test on one workstation with IIS active and check both translation and the ordinary `http://localhost/` page. IIS Request Filtering must be enabled in Windows IIS features; no separate URL Rewrite MSI is required.
+```cmd
+BabylonWebServerFix.exe install --iis-mode rewrite
+```
+
+This installs or reuses Microsoft URL Rewrite, creates the managed Rewrite rule, and **then removes the managed native filtering rule**, so the two rules do not remain active together. If the MSI cannot be downloaded, the existing native rule remains in place. To use an offline installer, place the signed MSI beside the EXE or use `--msi PATH`; supplying `--msi` or `--msi-url` without `--iis-mode` automatically selects Rewrite.
+
+Switching back to default native filtering is equally simple:
+
+```cmd
+BabylonWebServerFix.exe install
+```
+
+The native rule is installed or verified **before** the managed URL Rewrite rule is removed. No Microsoft module is uninstalled; only this project's rules are changed. Both migrations back up IIS configuration before changes.
+
+`status` reports both managed IIS rule types. `remove-iis` removes both managed IIS rules without touching Apache or the WinINet cache. `remove` also removes the application's other managed settings. IIS Request Filtering must be enabled as a Windows IIS feature.
+
+**Deployment note:** this behavior is in the unreleased development build, not the published v1.0.0 Stable. Test switching modes on a workstation before wider deployment.
 
 ## Quick start (Command Prompt / CMD)
 
@@ -85,7 +101,7 @@ Run `--help` for the complete option list. Notable options: `--site "Default Web
 ### Default behavior
 
 - If neither IIS nor Apache is installed: **do nothing**, including no cache cleanup.
-- If IIS is installed: the default uses URL Rewrite, while experimental `--iis-mode native` uses built-in Request Filtering without MSI. If URL Rewrite is missing, use an offline MSI or a direct official Microsoft MSI download (overridable via `--msi-url`) and validate its **Authenticode trust and Microsoft signer** using Windows WinTrust APIs, without launching PowerShell. Only the downloaded MSI is automatically deleted.
+- If IIS is installed: **default native Request Filtering requires no MSI and no download**. Choose `--iis-mode rewrite` explicitly to use Microsoft URL Rewrite. When the mode changes, the project installs the target rule first, then removes its old managed IIS rule. Optional MSI downloads still require valid Microsoft Authenticode signatures through Windows WinTrust; downloaded MSI files are removed after installation.
 - If Apache 2.4 is installed: configure the managed Apache rule, back up `httpd.conf`, validate using `httpd -t`, and restart a running Apache when configuration changed. An unchanged rule does **not** trigger a restart.
 - If Babylon is running: stop it before cache cleanup and restart it in the original interactive user session when a safe non-elevated restart can be arranged. If it was not running, leave it stopped.
 - Clear temporary WinINet web files for non-special Windows user profiles; preserve cookies and saved credentials. Locked files are reported and may remain.
@@ -95,12 +111,12 @@ Run `--help` for the complete option list. Notable options: `--site "Default Web
 
 | Server | Managed behavior | Validation notes |
 |---|---|---|
-| IIS (default) | URL Rewrite `AbortRequest` for Babylon 12 `localhost` | Confirmed translation with IIS running. |
-| IIS (`--iis-mode native`) | Built-in Request Filtering; **404.19** on a site-wide query substring | Experimental: no MSI, broader match, translation unverified. |
+| IIS (default: native) | Built-in Request Filtering, HTTP **404.19** on Babylon query substring | Translation confirmed on one test workstation without URL Rewrite; broad site-wide query match and initial error flash remain limitations. |
+| IIS (`--iis-mode rewrite`) | URL Rewrite `AbortRequest` on the exact Babylon 12 `localhost` request | Previously verified on a test workstation; needs signed MSI only when RewriteModule is not already installed. |
 | Apache / XAMPP | Conditional HTTP **403** for the same narrow request | HTTP 403 is not equivalent to IIS connection abort. Translation worked on one test PC while XAMPP listened on TCP/80; explicit HTTP rule behavior remains to be tested. |
 | Neither | No-op | No server software is installed. |
 
-The match targets the `localhost` host (optionally `:80`), `/` path and Babylon 12 query prefix. Normal `http://localhost/` requests without that query must remain unaffected.
+The Apache and IIS URL Rewrite rules match `localhost` (optionally `:80`), the `/` path and the Babylon 12 query prefix. The default IIS native filter matches a substring across the *entire selected site's query strings*, regardless of host and path. Ordinary `http://localhost/` requests without the specified query are not targeted.
 
 ### Process and service management
 

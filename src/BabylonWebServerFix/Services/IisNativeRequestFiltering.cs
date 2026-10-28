@@ -3,7 +3,7 @@ using Microsoft.Web.Administration;
 namespace BabylonWebServerFix.Services;
 
 /// <summary>
-/// Optional MSI-free IIS Request Filtering rule. Unlike URL Rewrite this
+/// Default MSI-free IIS Request Filtering rule. Unlike URL Rewrite this
 /// rejects all paths/hosts on the selected site with a matching query string,
 /// returning HTTP 404.19 rather than aborting the connection.
 /// </summary>
@@ -65,7 +65,7 @@ internal sealed class IisNativeRequestFiltering(CliOptions options, DeployLog lo
         if (existing is not null) { _log.Info("IIS native Babylon rule already installed; unchanged."); return; }
         if (_options.DryRun)
         {
-            _log.Info("Would install built-in Request Filtering rule (HTTP 404.19, no URL Rewrite MSI).");
+            _log.Info("Would install built-in IIS Request Filtering rule (HTTP 404.19; no MSI).");
             return;
         }
 
@@ -82,8 +82,8 @@ internal sealed class IisNativeRequestFiltering(CliOptions options, DeployLog lo
         deny.Add(entry);
         rules.Add(ruleNew);
         manager.CommitChanges();
-        _log.Warn("Experimental IIS native filtering installed (HTTP 404.19). No MSI was downloaded. " +
-                  "Query match applies across all paths and hosts on this IIS site. Test Babylon translation and normal localhost pages.");
+        _log.Info("Installed IIS native Request Filtering rule (HTTP 404.19; no URL Rewrite MSI required).");
+        _log.Info("Native rule matches the Babylon query substring across all paths and hostnames of the selected IIS site.");
     }
 
     private static bool IsManaged(ConfigurationElement e)

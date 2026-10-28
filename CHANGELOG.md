@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.3 — unreleased development (2026-10-28)
+
+- Make the built-in, MSI-free IIS Request Filtering mode the default for ordinary `install` and no-argument execution.
+- Confirmed on a test workstation: Babylon Pro 12 successfully translates with IIS native filtering active; a brief initial error-page flash was observed and remains a known limitation.
+- Convert successful native filter setup message from WARN to INFO.
+- Add bidirectional migration: switch to native only after its rule is installed, removing the old Babylon URL Rewrite rule; switch to URL Rewrite only after that rule is installed, then removing the native Babylon filtering rule.
+- Preserve Microsoft URL Rewrite module itself (no module uninstall or unnecessary download); make `--iis-mode rewrite` opt-in, while explicit `--msi` or `--msi-url` selects Rewrite.
+- Add CLI and regression tests for default mode, explicit alternatives and conflicting option combinations.
+
+
 ## 1.0.2 — unreleased development (2026-10-28)
 
 - Opt-in `--iis-mode native` uses built-in IIS Request Filtering without downloading/installing URL Rewrite.

@@ -6,7 +6,7 @@ public sealed record CliOptions
 {
     public string Action { get; private set; } = "install";
     public string Site { get; private set; } = "Default Web Site";
-    public string IisMode { get; private set; } = "rewrite";
+    public string IisMode { get; private set; } = "native";
     public string? MsiPath { get; private set; }
     public Uri? MsiUrl { get; private set; }
     public string? ApacheHttpdPath { get; private set; }
@@ -39,12 +39,16 @@ public sealed record CliOptions
                 throw new ArgumentException($"Missing value for {args[i - 1]}");
             return args[i];
         }
+        bool iisModeExplicit = false;
         for (; i < args.Length; i++)
         {
             switch (args[i].ToLowerInvariant())
             {
                 case "--site": o.Site = NeedValue(); break;
-                case "--iis-mode": o.IisMode = NeedValue().ToLowerInvariant(); break;
+                case "--iis-mode":
+                    o.IisMode = NeedValue().ToLowerInvariant();
+                    iisModeExplicit = true;
+                    break;
                 case "--msi": o.MsiPath = NeedValue(); break;
                 case "--msi-url": o.MsiUrl = RewriteInstallerPolicy.ParseMicrosoftDownloadUrl(NeedValue()); break;
                 case "--apache-httpd": o.ApacheHttpdPath = NeedValue(); break;
@@ -61,7 +65,13 @@ public sealed record CliOptions
                 default: throw new ArgumentException("Unknown option: " + args[i]);
             }
         }
+        // A supplied MSI path or URL is an intentional request for URL Rewrite.
+        // Honor it when --iis-mode was not explicitly specified.
+        if (!iisModeExplicit && (o.MsiPath is not null || o.MsiUrl is not null))
+            o.IisMode = "rewrite";
         if (string.IsNullOrWhiteSpace(o.Site)) throw new ArgumentException("--site must not be empty");
+        if (iisModeExplicit && o.IisMode == "native" && (o.MsiPath is not null || o.MsiUrl is not null))
+            throw new ArgumentException("MSI installer options require --iis-mode rewrite, not native.");
         if (o.IisMode is not ("rewrite" or "native")) throw new ArgumentException("--iis-mode must be rewrite or native");
         if (o.MsiPath is not null && o.MsiUrl is not null) throw new ArgumentException("--msi and --msi-url cannot be combined");
         if (o.LogPath != null && !o.EnableLog) throw new ArgumentException("--log-path requires --enable-log");
@@ -86,8 +96,8 @@ public sealed record CliOptions
 
         Options:
           --site "Default Web Site"     IIS site name
-          --iis-mode rewrite|native     IIS URL Rewrite (default) or experimental
-                                        native Request Filtering (without MSI)
+          --iis-mode native|rewrite     IIS Request Filtering (default, no MSI)
+                                        or Microsoft IIS URL Rewrite (explicit)
           --msi PATH                    Offline Microsoft-signed MSI (local / network share)
           --msi-url HTTPS_URL           Updated direct Microsoft .msi download URL
           --apache-httpd PATH           Exact Apache httpd.exe if detection is ambiguous
@@ -104,9 +114,11 @@ public sealed record CliOptions
 
         An elevated Windows x64 terminal is required for mutating actions.
         If neither IIS nor Apache is present: do nothing (including cache cleanup).
-        IIS installer search: --msi, then --msi-url, then MSI beside EXE, then Microsoft URL.
-        An installed RewriteModule is reused; no automatic upgrade is attempted.
-        Native IIS mode blocks a Babylon query substring site-wide with HTTP 404.19.
+        Default IIS mode: native Request Filtering, no MSI download.
+        --iis-mode rewrite enables Microsoft URL Rewrite (or use --msi / --msi-url).
+        Existing RewriteModule is reused; it is never automatically upgraded.
+        Switching modes removes only the other Babylon compatibility rule.
+        Native IIS query blocking is site-wide and returns HTTP 404.19.
         remove-iis cleans only the managed IIS rules, not Apache or cache.
         """;
 }

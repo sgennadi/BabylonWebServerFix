@@ -1,4 +1,4 @@
-# Validation matrix for stable 1.0.0 / v1.0.2 development
+# Validation matrix for stable 1.0.0 / v1.0.3 development
 
 The CLI must compile on `windows-2025` with .NET 10 before testing.
 
@@ -6,8 +6,12 @@ The CLI must compile on `windows-2025` with .NET 10 before testing.
 |---|---|---|
 | Windows workstation without IIS/Apache | `install` makes no changes, does not delete cache, does not create log | [ ] |
 | IIS only, W3SVC stopped | Adds rule without starting W3SVC | [ ] |
-| IIS native mode, URL Rewrite absent | `install --iis-mode native` adds named Request Filtering rule without MSI | [ ] Windows IIS integration test pending |
-| IIS native mode, Babylon translation | Babylon translates with IIS HTTP 404.19 filtering active | [ ] Requires real Babylon test |
+| IIS native mode, URL Rewrite absent | `install --iis-mode native` adds named Request Filtering rule without MSI | [x] 2026-10-28 BASE-IMAGE: IIS Started, named native filter installed with no MSI download |
+| IIS native mode, Babylon translation | Babylon translates after native filtering was installed with IIS running | [x] 2026-10-28 BASE-IMAGE: user confirmed translation works. Brief initial error page with red text appeared before normal Babylon window |
+| Default IIS mode with no MSI | Plain `install` chooses native filtering without a URL Rewrite download | [x] CLI smoke test; Windows IIS integration test for the new default pending |
+| Migration native -> rewrite | Explicit `--iis-mode rewrite` installs Rewrite rule then removes only the managed native IIS rule | [ ] Needs target-machine integration test; rewrite installation failure keeps native |
+| Migration rewrite -> native | Plain `install` prepares native rule first, then removes only the managed Rewrite rule | [ ] Needs target-machine integration test |
+| Repeated native install | No IIS backup/changes when the native Babylon rule already matches | [ ] Needs workstation retest |
 | IIS native mode, website | Ordinary `http://localhost/` works; Babylon query denied with 404.19 | [ ] Needs live HTTP test |
 | `remove-iis` | Removes only managed IIS rules, not Apache/cache | [ ] Needs integration test; parser covered by smoke tests |
 | IIS missing RewriteModule, MSI stored beside the EXE | Use signed local MSI without contacting Microsoft URL | [ ] Source precedence covered by offline smoke test; target-machine test pending |

@@ -47,20 +47,36 @@ internal sealed class IisService(CliOptions options, DeployLog log)
             }
             if (_options.IisMode == "native")
             {
-                if (moduleFound && HasManagedRewriteRule(manager))
-                    _log.Warn("Existing URL Rewrite compatibility rule may intercept Babylon first. " +
-                              "For a native-only trial, run remove-iis before installing --iis-mode native.");
+                // Install the new rule before removing the older managed rule.
+                // If the new rule fails, the previous URL Rewrite rule remains.
+                bool rewriteOwned = moduleFound && HasManagedRewriteRule(manager);
                 native.Apply(manager, "install");
+                if (rewriteOwned)
+                {
+                    if (_options.DryRun)
+                        _log.Info("Would remove previous Babylon URL Rewrite rule after native setup.");
+                    else
+                    {
+                        using var afterNative = new ServerManager();
+                        ApplyRule(afterNative, "remove");
+                        _log.Info("IIS compatibility migrated from URL Rewrite to native Request Filtering.");
+                    }
+                }
                 return;
             }
             if (moduleFound)
             {
+                // The explicit URL Rewrite choice takes priority. Configure
+                // that rule first, then clean up our native filtering rule.
                 ApplyRule(manager, "install");
+                using var afterRewrite = new ServerManager();
+                native.Apply(afterRewrite, "remove");
                 return;
             }
             if (_options.DryRun)
             {
                 _log.Info("Would install signed Microsoft IIS URL Rewrite from offline MSI or HTTPS and configure compatibility rule.");
+                native.Apply(manager, "remove");
                 return;
             }
         }
@@ -72,6 +88,11 @@ internal sealed class IisService(CliOptions options, DeployLog log)
         if (!HasRewriteModule(updated))
             throw new InvalidOperationException("RewriteModule not registered after MSI; restart Windows and retry.");
         ApplyRule(updated, mode);
+        // After successfully installing URL Rewrite, remove only the
+        // Babylon-managed native filter. The native rule stays intact
+        // whenever URL Rewrite installation or verification fails.
+        using var afterRewriteInstall = new ServerManager();
+        new IisNativeRequestFiltering(_options, _log).Apply(afterRewriteInstall, "remove");
     }
 
     private void ApplyRule(ServerManager manager, string mode)
