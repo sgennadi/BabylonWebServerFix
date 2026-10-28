@@ -2,16 +2,17 @@
 
 **Windows x64 utility for Babylon Pro 12 compatibility with Microsoft IIS and Apache/XAMPP.**
 
-> **v0.1.3 Preview.** Windows CI passes; Babylon translation was verified with Apache/XAMPP and separately with IIS active on port 80. The IIS test used an EXE whose SHA-256 matched the published release asset. Broader deployment scenarios still need testing.
+> **v1.0.0 Stable (supported test configurations).** Windows CI and 31 offline smoke tests passed for the preceding preview; Babylon translation was validated separately with IIS and Apache/XAMPP on test workstations. Additional deployment scenarios still require local validation, as documented below.
 
 Babylon 12 embeds an MSHTML-based viewer that may request `http://localhost/?uid=...&ver=12000&bld=13&iev=11...`. A local web server can intercept that URL and replace Babylon's interface with a site response. This tool configures narrowly scoped server rules and optionally cleans temporary WinINet files without changing IP addresses, port bindings, Babylon installation files or licenses.
 
 ## Download the Windows EXE
 
-1. Open **[v0.1.3 Preview Release](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v0.1.3-preview.1)** and download `BabylonWebServerFix.exe` from **Assets**.
-2. Run the executable from an **elevated Command Prompt (Run as administrator)** on a test workstation.
+1. Open **[v1.0.0 Stable Release](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.0)** and download `BabylonWebServerFix.exe` and optional `SHA256SUMS.txt` from **Assets**.
+2. Verify the SHA-256 checksum before deploying to multiple machines.
+3. Run the executable from an **elevated Command Prompt (Run as administrator)** on a test workstation.
 
-The latest pre-release build artifact is also available through [Windows build and smoke tests](https://github.com/sgennadi/BabylonWebServerFix/actions/workflows/build.yml).
+The latest development build artifacts are also available through [Windows build and smoke tests](https://github.com/sgennadi/BabylonWebServerFix/actions/workflows/build.yml). Prefer the versioned stable release for deployment.
 
 The EXE is **unsigned** until a code-signing certificate is configured. GitHub Actions produces a self-contained .NET 10 single-file build; target machines do not need a separate .NET runtime or PowerShell scripts.
 
@@ -90,21 +91,22 @@ The resulting EXE is `dist\BabylonWebServerFix.exe`. NuGet restore requires inte
 
 ## Testing and limitations
 
-Real-world verification on 2026-10-28 confirmed Babylon translation with both Apache/XAMPP and an active IIS configuration. The IIS test EXE hash matched the v0.1.3 Preview release binary. Run `status`, `install --dry-run`, `install` and a repeat `install` on a **test** workstation before broader distribution. Verify Babylon translates, Apache serves a normal `http://localhost/` page, the managed request receives the intended behavior, and IIS/Apache preserve their port bindings. Repeat-install idempotence has offline regression tests; the v0.1.3 code still needs target-machine validation.
+Real-world verification on 2026-10-28 confirmed Babylon translation with both Apache/XAMPP and an active IIS configuration. The IIS test EXE hash matched the v0.1.3 Preview release binary; v1.0.0 retains the same operational logic with a version update. Run `status`, `install --dry-run`, `install` and a repeat `install` on a **test** workstation before broader distribution. Verify Babylon translates, Apache serves a normal `http://localhost/` page, the managed request receives the intended behavior, and IIS/Apache preserve their port bindings. Repeat-install idempotence has offline regression tests; repeat-install behavior and other configurations still require wider target-machine validation.
 
-Read the [test matrix](docs/TEST_MATRIX.md). A green CI build checks compilation and smoke tests, **not** complete IIS/Apache integration. Do not treat the public preview as a stable enterprise release.
+Read the [test matrix](docs/TEST_MATRIX.md). A green CI build checks compilation and smoke tests, **not** complete IIS/Apache integration. The stable release is intended for the tested IIS and XAMPP compatibility workflow; validate any other configuration before broad production deployment.
 
 ## Repository layout
 
 - `src/BabylonWebServerFix/` — C# CLI and Windows API integrations
 - `tests/BabylonWebServerFix.SmokeTests/` — offline regression tests
 - `.github/workflows/build.yml` — Windows x64 CI build and artifact
-- `.github/workflows/release.yml` — optional preview release from an existing Git tag
+- `.github/workflows/release.yml` — optional preview releases from existing tags
+- `.github/workflows/stable-release.yml` — versioned stable release build, executable and checksum
 - `docs/TEST_MATRIX.md` — functional validation checklist
 
 ## Releases
 
-**v0.1.3 Preview is already published** at [GitHub Releases](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v0.1.3-preview.1). For a future version, after a successful `main` CI build and a workstation test, create a new preview Git tag (for example `v0.1.4-preview.1`) and run **Actions → Preview release** with that existing tag. The workflow builds, tests, and publishes an **unsigned prerelease** EXE. Do not mark a release stable without additional workstation coverage.
+**v1.0.0 Stable** is published at [GitHub Releases](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.0). The earlier [v0.1.3 Preview](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v0.1.3-preview.1) remains available for comparison. Stable packages include an unsigned EXE and a SHA-256 checksum file. The manual stable-release workflow requires an existing tag for future releases; new versions should be tested on Windows before publishing.
 
 ## License
 

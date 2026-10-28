@@ -1,4 +1,4 @@
-# Validation matrix for preview 0.1.3
+# Validation matrix for stable 1.0.0
 
 The CLI must compile on `windows-2025` with .NET 10 before testing.
 
@@ -34,4 +34,4 @@ The CLI must compile on `windows-2025` with .NET 10 before testing.
 | `remove` | Only managed rules / Active Setup removed | [ ] |
 | Unsigned build SmartScreen behavior | Confirm deployment policies allow the exe, or sign release | [ ] |
 
-**Do not distribute broadly until items relevant to the deployment are tested.** A 2026-10-28 BASE-IMAGE run reported success for the C# IIS URL Rewrite installation path while W3SVC was started, including MSI exit code 0, rule installation, Babylon process restart and WinINet cache cleanup without errors. Translation with IIS active was subsequently confirmed by the user; the deployed EXE's SHA-256 exactly matches the public v0.1.3 Preview release. The normal IIS `http://localhost/` response and downloaded MSI file deletion remain unverified. Apache and Babylon translation were observed together on another workstation test; Apache HTTP 403 behavior and repeat-install idempotence still require targeted workstation validation.
+**Stable release scope:** the verified workflow covers Babylon Pro 12 with an active IIS site or XAMPP console Apache on a Windows test workstation. Test other scenarios locally before mass deployment. **Do not distribute broadly until items relevant to the deployment are tested.** A 2026-10-28 BASE-IMAGE run reported success for the C# IIS URL Rewrite installation path while W3SVC was started, including MSI exit code 0, rule installation, Babylon process restart and WinINet cache cleanup without errors. Translation with IIS active was subsequently confirmed by the user; the deployed EXE's SHA-256 exactly matches the public v0.1.3 Preview release. The normal IIS `http://localhost/` response and downloaded MSI file deletion remain unverified. Apache and Babylon translation were observed together on another workstation test; Apache HTTP 403 behavior and repeat-install idempotence still require targeted workstation validation.

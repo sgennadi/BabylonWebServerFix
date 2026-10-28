@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.0 — first stable release (2026-10-28)
+
+- Promote the tested Babylon Pro 12 / IIS / Apache-XAMPP compatibility workflow to the first stable Windows x64 CLI release.
+- Preserve v0.1.3 behavior (no invasive changes to the IIS rule, Apache restart, Babylon restart, or WinINet cleanup code).
+- Package a self-contained .NET 10 `BabylonWebServerFix.exe` and an independent SHA-256 checksum asset.
+- Document supported test configurations, known limitations and verification steps.
+- Keep logging and next-logon cleanup disabled by default.
+
+
 ## 0.1.3-preview (2026-10-28)
 
 - Replace the runtime PowerShell signer check with native Windows WinTrust verification plus Microsoft publisher identity validation for IIS URL Rewrite MSI files.
