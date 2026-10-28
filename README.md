@@ -2,7 +2,7 @@
 
 **Windows x64 compatibility utility for Babylon Pro 12 with Microsoft IIS and Apache/XAMPP.**
 
-**Latest published stable release: [v1.0.4](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.4).** The v1.0.5 source is ready in `main`; publish and verify the new release before deploying its changed no-argument behavior.
+**Latest stable release: [v1.0.5](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.5).** Starting the EXE without arguments, with `/?`, `-h`, or `--help` displays usage and examples without changing the system. Run `install` explicitly to apply compatibility rules.
 
 Babylon Pro 12 uses an embedded MSHTML viewer. When it loads its interface from `http://localhost/`, a local IIS or Apache server on port 80 can intercept the request and display the web server's page instead of the Babylon interface. This utility installs compatibility rules without changing server port bindings or Babylon installation and licensing files.
 
@@ -23,7 +23,7 @@ The two interface-loading modes above are different from the utility's **two IIS
 
 ## Download
 
-Download `BabylonWebServerFix.exe` and `SHA256SUMS.txt` from [GitHub Releases](https://github.com/sgennadi/BabylonWebServerFix/releases). For the no-argument Help behavior, use **v1.0.5 or later** after it is published. Verify the checksum before deployment.
+Download `BabylonWebServerFix.exe` and `SHA256SUMS.txt` from [v1.0.5 Stable](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.5). Verify the checksum before deployment.
 
 The EXE is an unsigned, self-contained .NET 10 Windows x64 executable. The target machine does not require a separate .NET runtime or PowerShell.
 
