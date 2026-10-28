@@ -31,12 +31,20 @@ Run mutating commands from an elevated Command Prompt or PowerShell. The `status
 
 ## Quick start
 
+Show help and examples (no changes):
+
+```cmd
+BabylonWebServerFix.exe
+BabylonWebServerFix.exe /?
+```
+
+
 If Babylon's **localhost HTTP** mode conflicts with a local web server, inspect the current configuration before making changes:
 
 ```cmd
 BabylonWebServerFix.exe status
 BabylonWebServerFix.exe install --dry-run
-BabylonWebServerFix.exe
+BabylonWebServerFix.exe install
 ```
 
 **Without arguments**, `BabylonWebServerFix.exe` performs `install` (not `status`). Use `status` for a read-only check.
