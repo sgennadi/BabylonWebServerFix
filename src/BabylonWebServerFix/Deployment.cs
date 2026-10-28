@@ -11,6 +11,13 @@ internal sealed class Deployment(CliOptions options, DeployLog log, ApacheTarget
 
     public async Task<int> ExecuteAsync()
     {
+        BabylonUiDetection.WriteStatus(_log);
+        if (_options.Action == "install" && _options.FixedBabylon)
+        {
+            _log.Info("Confirmed fixed Babylon (--fixed-babylon): skipping IIS, Apache, cache and restart changes.");
+            _log.Info("DONE.");
+            return 0;
+        }
         var cache = new WinInetCache(_options, _log);
         var iis = new IisService(_options, _log);
         var apache = _apacheTarget is null ? null : new ApacheService(_options, _log, _apacheTarget);
