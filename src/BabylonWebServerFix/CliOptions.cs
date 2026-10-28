@@ -4,7 +4,8 @@ namespace BabylonWebServerFix;
 
 public sealed record CliOptions
 {
-    public string Action { get; private set; } = "install";
+    public string Action { get; private set; } = "status";
+    public bool Help { get; private set; } = false;
     public string Site { get; private set; } = "Default Web Site";
     public string IisMode { get; private set; } = "native";
     public string? MsiPath { get; private set; }
@@ -19,11 +20,15 @@ public sealed record CliOptions
     public bool SkipBabylonRestart { get; private set; }
     public bool SkipApacheRestart { get; private set; }
     public bool DryRun { get; private set; }
-    public bool Help { get; private set; }
 
     public static CliOptions Parse(string[] args)
     {
         var o = new CliOptions();
+        if (args.Length == 0 || (args.Length == 1 && args[0] is "/?" or "--help" or "-h"))
+        {
+            o.Help = true;
+            return o;
+        }
         int i = 0;
         if (args.Length > 0 && !args[0].StartsWith('-'))
         {
@@ -61,7 +66,7 @@ public sealed record CliOptions
                 case "--skip-babylon-restart": o.SkipBabylonRestart = true; break;
                 case "--skip-apache-restart": o.SkipApacheRestart = true; break;
                 case "--dry-run": o.DryRun = true; break;
-                case "--help": case "-h": o.Help = true; break;
+                case "--help": case "-h": case "/?": o.Help = true; break;
                 default: throw new ArgumentException("Unknown option: " + args[i]);
             }
         }
@@ -87,6 +92,8 @@ public sealed record CliOptions
     public static string Usage => """
         BabylonWebServerFix - IIS / Apache compatibility for Babylon Pro 12
 
+          BabylonWebServerFix.exe                   Show help (no changes)
+          BabylonWebServerFix.exe /?                Show help (no changes)
           BabylonWebServerFix.exe install           [options]
           BabylonWebServerFix.exe status            [options]
           BabylonWebServerFix.exe remove            [options]
@@ -110,8 +117,18 @@ public sealed record CliOptions
           --enable-log                  Create optional log (OFF by default)
           --log-path PATH               Custom log path, requires --enable-log
           --dry-run                     Show intended changes without changing anything
-          -h, --help                    Help
+          /?, -h, --help                Help
 
+        Examples:
+          BabylonWebServerFix.exe
+          BabylonWebServerFix.exe /?
+          BabylonWebServerFix.exe status
+          BabylonWebServerFix.exe install --dry-run
+          BabylonWebServerFix.exe install
+          BabylonWebServerFix.exe install --iis-mode rewrite
+          BabylonWebServerFix.exe remove-iis
+
+        No arguments or a help switch displays help without changing anything.
         An elevated Windows x64 terminal is required for mutating actions.
         If neither IIS nor Apache is present: do nothing (including cache cleanup).
         Default IIS mode: native Request Filtering, no MSI download.
