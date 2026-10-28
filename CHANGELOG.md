@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.5 — stable release
+
+- No-argument execution displays help and examples without modifying the system.
+- Added Windows-style `/?` along with `-h` and `--help`.
+- Compatibility changes require explicit `install` command.
+- Updated documentation and CLI smoke tests; IIS/Apache compatibility behavior is unchanged.
+
+
 ## 1.0.4 — stable release (2026-10-28)
 
 - This stable release includes the preceding 1.0.1–1.0.3 development changes: MSI-source hardening, MSI-free native IIS filtering, `remove-iis`, and safe bidirectional migration between native filtering and URL Rewrite.
