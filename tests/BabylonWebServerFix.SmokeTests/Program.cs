@@ -28,6 +28,15 @@ Expect(xamppArgs.Length == 4 && xamppArgs[0] == "-d" && xamppArgs[2] == "-f", "X
 Expect(xamppArgs[1] == @"C:\xampp\apache" && xamppArgs[3].EndsWith(@"conf\httpd.conf", StringComparison.OrdinalIgnoreCase),
     "XAMPP restart uses the same explicit configuration that was validated");
 
+Expect(!HostPolicy.ApacheRuleRequiresUpdate(true, true, true),
+    "repeated Apache install is idempotent; no restart needed");
+Expect(HostPolicy.ApacheRuleRequiresUpdate(false, true, true),
+    "Apache include missing; configuration update needed");
+Expect(HostPolicy.ApacheRuleRequiresUpdate(true, false, true),
+    "Apache snippet unmanaged; configuration update needed");
+Expect(HostPolicy.ApacheRuleRequiresUpdate(true, true, false),
+    "Apache snippet changed; configuration update needed");
+
 var defaults = CliOptions.Parse(["install"]);
 Expect(!defaults.EnableLog && !defaults.CleanupNextLogon, "opt-in switches disabled by default");
 Expect(defaults.Site == "Default Web Site", "default IIS site");

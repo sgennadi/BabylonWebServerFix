@@ -1,4 +1,4 @@
-# Validation matrix for preview 0.1.0
+# Validation matrix for preview 0.1.2
 
 The CLI must compile on `windows-2025` with .NET 10 before testing.
 
@@ -8,13 +8,14 @@ The CLI must compile on `windows-2025` with .NET 10 before testing.
 | IIS only, W3SVC stopped | Adds rule without starting W3SVC | [ ] |
 | IIS already has Babylon rule v3/v10 | Idempotent, no duplicate, no unneeded changes | [ ] |
 | IIS only, local port 80 website | Normal `/` works; Babylon interface translates | [ ] |
-| XAMPP Apache 2.4 running on port 80, not service | Adds Apache snippet, `httpd -t`, restarts using XAMPP batch files | [ ] |
-| Apache only, Babylon actually translates | Confirm HTTP 403 compatibility empirically | [ ] |
+| XAMPP Apache 2.4 running on port 80, not service | Adds Apache snippet, `httpd -t`, direct process restart, TCP/80 listening | [x] Test workstation log |
+| Apache active on TCP/80, Babylon actually translates | Babylon Pro 12 translates while IIS is stopped and XAMPP Apache is running; HTTP 403 itself still needs verification | [x] Test workstation screenshot + log |
 | Apache stopped before `install` | Remains stopped | [ ] |
+| Repeated `install`, Apache rule unchanged | Apache is not restarted; explicit `restart-apache` still supported | [x] Policy smoke tests; workstation retest pending |
 | IIS and Apache installed, one active | Configures only the intended rules, avoids port changes | [ ] |
 | Multiple Apache installations | Selects actual unique port-80 instance or refuses ambiguous choice | [ ] |
-| XAMPP paths differing by case | Recognized as the same executable | [ ] |
-| Student Babylon process was running | Restarted in same session and non-elevated token | [ ] |
+| XAMPP paths differing by case | Recognized as the same executable | [x] Smoke tests and workstation log |
+| Student Babylon process was running | Restarted in same session; non-elevated token not independently inspected | [x] Session/log; token unverified |
 | Student Babylon was not running | Remains stopped | [ ] |
 | SYSTEM / Session 0 invocation | No XAMPP batch restart; no unintended interactive sessions | [ ] |
 | User cache file locked | Warns, does not delete cookies/passwords; program continues | [ ] |
@@ -28,4 +29,4 @@ The CLI must compile on `windows-2025` with .NET 10 before testing.
 | `remove` | Only managed rules / Active Setup removed | [ ] |
 | Unsigned build SmartScreen behavior | Confirm deployment policies allow the exe, or sign release | [ ] |
 
-**Do not distribute until items relevant to the deployment are tested.** The IIS rewrite was previously observed working in PowerShell; the C# port requires new validation. Apache handling remains experimental.
+**Do not distribute until items relevant to the deployment are tested.** The IIS rewrite was previously observed working in PowerShell; the C# port requires new validation. Apache and Babylon translation were observed together on one workstation, but HTTP 403 behavior and repeated-install idempotence require targeted workstation validation.

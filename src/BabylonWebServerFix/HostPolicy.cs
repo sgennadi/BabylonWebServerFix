@@ -32,6 +32,12 @@ public static class HostPolicy
     public static string ApacheIncludeBlock(string absoluteSnippetPath) =>
         BeginMarker + "\r\nInclude \"" + absoluteSnippetPath.Replace('\\', '/') + "\"\r\n" + EndMarker + "\r\n";
 
+    // An idempotent install changes nothing when our include and exact snippet
+    // already exist. File timestamps do not indicate whether an Apache reload
+    // is necessary: do not use them to trigger disruptive restarts.
+    public static bool ApacheRuleRequiresUpdate(bool includePresent, bool snippetManaged, bool snippetExact) =>
+        !includePresent || !snippetManaged || !snippetExact;
+
     // Start the selected XAMPP binary directly instead of using unreliable BATs.
     public static string[] XamppStartArguments(string root, string config) =>
         ["-d", root, "-f", config];

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2-preview (2026-10-28)
+
+- Fix idempotence: repeated `install` no longer restarts Apache when the managed include and rule are unchanged.
+- Replace timestamp-based Apache reload inference with exact configuration state.
+- Add four offline regression tests for already-installed/missing/outdated managed Apache configuration.
+- Confirmed on one Windows test workstation: XAMPP listening on port 80 and Babylon Pro 12 translating English to Hebrew after restart. A broader HTTP-compatibility test is still needed.
+- Retain explicit `restart-apache` and automatic Babylon restart behavior.
+
 ## 0.1.1-preview (2026-10-28)
 
 - Fix XAMPP console restart: bundled apache_stop.bat may contain an unresolved @@BITROCK_INSTALLDIR@@ token, and apache_start.bat may block in the foreground.

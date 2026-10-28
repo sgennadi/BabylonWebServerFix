@@ -150,11 +150,12 @@ internal sealed class ApacheService(CliOptions options, DeployLog log, ApacheTar
 
         if (mode == "status") return;
         if (mode == "remove" && !includePresent) { _log.Info("Apache rule already absent."); return; }
-        if (mode == "install" && includePresent && ownSnippet && snippet == HostPolicy.ApacheSnippet)
+        if (mode == "install" && !HostPolicy.ApacheRuleRequiresUpdate(includePresent, ownSnippet, snippet == HostPolicy.ApacheSnippet))
         {
-            _log.Info("Apache rule already installed; unchanged.");
-            if (NeedsRestart() && !_options.SkipApacheRestart)
-                await RestartAsync();
+            // Never restart a running Apache if this invocation did not modify
+            // its configuration. Use the explicit restart-apache command to
+            // reload out-of-band administrator changes.
+            _log.Info("Apache rule already installed; unchanged. Apache restart not required.");
             return;
         }
         if (snippetExists && !ownSnippet) throw new InvalidOperationException("Apache snippet exists but is not managed by us: " + _target.Snippet);
@@ -229,24 +230,6 @@ internal sealed class ApacheService(CliOptions options, DeployLog log, ApacheTar
     {
         var index = input.IndexOf('\n');
         return index < 0 ? "" : input[(index + 1)..];
-    }
-
-    private bool NeedsRestart()
-    {
-        var active = GetRunningApache().Where(p => WindowsSystem.SamePath(p.Exe, _target.Exe)).ToArray();
-        if (active.Length == 0) return false;
-        var newestChange = new[] { _target.Config, _target.Snippet }.Where(File.Exists)
-            .Max(path => File.GetLastWriteTimeUtc(path));
-        foreach (var entry in active)
-        {
-            try
-            {
-                using var p = Process.GetProcessById(entry.Id);
-                if (p.StartTime.ToUniversalTime() > newestChange) return false;
-            }
-            catch (Exception) { }
-        }
-        return true;
     }
 
     public async Task RestartAsync()

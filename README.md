@@ -2,7 +2,7 @@
 
 A Windows x64 command-line utility that helps **Babylon Pro 12** coexist with local development web servers **Microsoft IIS** and **Apache HTTP Server / XAMPP** on the same workstation.
 
-> **Preview (v0.1.1). The initial version passed Windows CI; this XAMPP restart fix still requires a real workstation test.** The included PowerShell v10 is retained as the previously tested implementation. Check functionality on one disposable/test workstation before any classroom or enterprise rollout.
+> **Preview (v0.1.2). Windows CI passes, and Apache + Babylon translation were observed together on one test workstation; broader compatibility still needs validation.** The included PowerShell v10 is retained as the previously tested implementation. Check functionality on one disposable/test workstation before any classroom or enterprise rollout.
 
 ## Why it exists
 
@@ -15,7 +15,7 @@ This utility transfers that workflow from PowerShell to a single, self-contained
 | Web server | Managed rule | Important limitation |
 |---|---|---|
 | IIS | `Babylon12-Localhost-Compatibility` with URL Rewrite `AbortRequest` | Requires Microsoft IIS URL Rewrite 2.1. May install the official signed x64 MSI when IIS exists. |
-| Apache 2.4, including XAMPP | A scoped Apache `<LocationMatch>` / `<If>` rule | Returns **HTTP 403**, not a TCP abort. Babylon compatibility on Apache is **not yet verified**. |
+| Apache 2.4, including XAMPP | A scoped Apache `<LocationMatch>` / `<If>` rule | Returns **HTTP 403**, not a TCP abort. A test workstation successfully translated with Babylon Pro 12 while XAMPP Apache listened on TCP/80. The HTTP 403 behavior still needs separate verification. |
 | Neither installed | No operation | Does not clear cache or install anything. |
 
 The match is limited to the exact HTTP host `localhost` (optionally port 80), root path `/` and Babylon 12 query prefix `uid=...&ver=12000&bld=13&iev=11`. All other requests should be left alone. Please independently verify behavior with your applications before distribution.
@@ -56,7 +56,7 @@ Other flags: `--site "Default Web Site"`, `--msi PATH`, `--apache-httpd PATH`, `
 
 - **Babylon:** only if already running, and only if an interactive, non-elevated restart in the original user session can be prepared safely. Otherwise it is left alone. `--skip-babylon-restart` opts out.
 - **Apache as Windows service:** uses `httpd -k restart -n SERVICE`.
-- **XAMPP console Apache:** starts the selected `httpd.exe` directly with `-d ROOT -f CONFIG`. Bundled XAMPP BATs are not called because they may contain unresolved installation placeholders or block in the foreground. Restarts only Apache processes from the selected executable in the **same user and session**, and verifies TCP/80. Console processes are forcibly terminated during this operation; existing HTTP requests can be interrupted. Use `--skip-apache-restart` to opt out. A previously stopped Apache remains stopped.
+- **XAMPP console Apache:** starts the selected `httpd.exe` directly with `-d ROOT -f CONFIG`. Bundled XAMPP BATs are not called because they may contain unresolved installation placeholders or block in the foreground. Restarts only Apache processes from the selected executable in the **same user and session**, and verifies TCP/80. Console processes are forcibly terminated during this operation; existing HTTP requests can be interrupted. Use `--skip-apache-restart` to opt out. A previously stopped Apache remains stopped. Repeating `install` with an unchanged managed rule does **not** restart Apache; use `restart-apache` for an explicit reload.
 - **IIS:** it is not started or restarted automatically.
 
 > **Security:** run the tool only from a trusted directory and ensure the XAMPP `.bat` files and Apache configuration are not writable by untrusted users before using an elevated administrator account. Do not place a downloaded executable in an untrusted student-writable share.
