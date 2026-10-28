@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing stable release tag (e.g. v1.0.1)'
+        description: 'Stable release tag (e.g. v1.0.4)'
         required: true
+        default: 'v1.0.4'
         type: string
 
 permissions:
@@ -16,11 +17,16 @@ jobs:
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.tag }}
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
+      - name: Validate release tag matches project version
+        shell: pwsh
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          $version = ([xml](Get-Content 'src/BabylonWebServerFix/BabylonWebServerFix.csproj')).Project.PropertyGroup.Version
+          if ($env:TAG -ne "v$version") { throw "Tag $env:TAG does not match project v$version" }
       - name: Build, smoke test, and publish x64
         shell: cmd
         run: |
@@ -33,16 +39,47 @@ jobs:
           dist\BabylonWebServerFix.exe --help >NUL
           if errorlevel 1 exit /b 1
       - name: Generate SHA-256 checksum
-        shell: cmd
+        shell: pwsh
         run: |
-          for /f "delims=" %%H in ('certutil -hashfile "dist\BabylonWebServerFix.exe" SHA256 ^| findstr /R /I "^[0-9a-f][0-9a-f]*$"') do @echo %%H *BabylonWebServerFix.exe> "dist\SHA256SUMS.txt"
-          if not exist "dist\SHA256SUMS.txt" exit /b 1
-          type "dist\SHA256SUMS.txt"
-      - name: Publish stable release from existing tag
-        shell: cmd
+          $hash = (Get-FileHash 'dist/BabylonWebServerFix.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Path 'dist/SHA256SUMS.txt' -Value "$hash *BabylonWebServerFix.exe" -Encoding ascii
+          if ((Get-Item 'dist/BabylonWebServerFix.exe').Length -lt 1000000) { throw 'Unexpectedly small EXE' }
+      - name: Create or update stable release
+        shell: pwsh
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
           TAG: ${{ inputs.tag }}
         run: |
-          gh release create "%TAG%" "dist/BabylonWebServerFix.exe" "dist/SHA256SUMS.txt" --repo "%GITHUB_REPOSITORY%" --title "%TAG%" --notes "Stable Windows x64 .NET 10 release. Review documentation and test the target configuration before broad deployment." --verify-tag
-          if errorlevel 1 exit /b 1
+          gh release view $env:TAG --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:TAG 'dist/BabylonWebServerFix.exe' 'dist/SHA256SUMS.txt' --clobber --repo $env:GITHUB_REPOSITORY
+          } else {
+            gh release create $env:TAG 'dist/BabylonWebServerFix.exe' 'dist/SHA256SUMS.txt' --target $env:GITHUB_SHA --repo $env:GITHUB_REPOSITORY --title "$env:TAG Stable" --notes-file 'releases/v1.0.4.md' --latest
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub release publish failed. Check RELEASE_TOKEN / Actions permissions.' }
+      - name: Verify assets before pruning old releases
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          $assets = @(gh release view $env:TAG --repo $env:GITHUB_REPOSITORY --json assets --jq '.assets[].name')
+          if ($LASTEXITCODE -ne 0) { throw 'Could not verify published release' }
+          foreach ($required in @('BabylonWebServerFix.exe', 'SHA256SUMS.txt')) {
+            if ($assets -notcontains $required) { throw "Missing release asset: $required" }
+          }
+          Write-Host "Verified release $env:TAG with EXE and checksum."
+      - name: Remove superseded stable and preview releases
+        if: ${{ inputs.tag == 'v1.0.4' }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+        run: |
+          foreach ($old in @('v1.0.0', 'v0.1.3-preview.1')) {
+            gh release view $old --repo $env:GITHUB_REPOSITORY *> $null
+            if ($LASTEXITCODE -eq 0) {
+              gh release delete $old --repo $env:GITHUB_REPOSITORY --yes --cleanup-tag
+              if ($LASTEXITCODE -ne 0) { throw "Failed to delete $old" }
+              Write-Host "Removed superseded release $old"
+            }
+          }
