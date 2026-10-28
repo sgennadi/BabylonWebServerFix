@@ -1,3 +1,5 @@
+using BabylonWebServerFix.Services;
+
 namespace BabylonWebServerFix;
 
 /// <summary>Read-only diagnostic. The old 2023 LocalUI files are not proof that localhost is unused.</summary>
@@ -7,7 +9,7 @@ public static class BabylonUiDetection
         runtimeLocalFileConfirmed ? "LOCAL_FILE_OBSERVED" :
         localHtmlExists ? "LOCAL_HTML_PRESENT_UNVERIFIED" : "NOT_DETECTED";
 
-    public static void WriteStatus(DeployLog log)
+    internal static void WriteStatus(DeployLog log)
     {
         var localHtml = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
             "Babylon", "LocalUI", "wnd.html");
