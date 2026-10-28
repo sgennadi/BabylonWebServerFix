@@ -38,6 +38,14 @@ Expect(HostPolicy.ApacheRuleRequiresUpdate(true, true, false),
     "Apache snippet changed; configuration update needed");
 
 var defaults = CliOptions.Parse(["install"]);
+Expect(!defaults.FixedBabylon, "fixed Babylon must never be assumed by default");
+Expect(CliOptions.Parse(["install", "--fixed-babylon"]).FixedBabylon, "explicit fixed Babylon confirmation parsed");
+bool fixedRejected = false;
+try { CliOptions.Parse(["remove", "--fixed-babylon"]); }
+catch (ArgumentException) { fixedRejected = true; }
+Expect(fixedRejected, "fixed Babylon confirmation cannot affect remove");
+Expect(BabylonUiDetection.Classify(true, false) == "LOCAL_HTML_PRESENT_UNVERIFIED", "local HTML alone is not proof of fixed version");
+Expect(BabylonUiDetection.Classify(false, false) == "NOT_DETECTED", "absence is reported");
 Expect(!defaults.EnableLog && !defaults.CleanupNextLogon, "opt-in switches disabled by default");
 Expect(defaults.Site == "Default Web Site", "default IIS site");
 Expect(CliOptions.Parse(["install", "--enable-log", "--cleanup-next-logon"]).CleanupNextLogon, "explicit next-logon toggle");
