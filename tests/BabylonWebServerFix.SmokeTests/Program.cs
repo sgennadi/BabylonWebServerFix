@@ -161,7 +161,7 @@ Expect(!HostPolicy.NativeIisMatches("uid=0&ver=13000&bld=13&iev=11"),
 Expect(HostPolicy.NativeIisRuleName != HostPolicy.RuleName,
     "native IIS and URL Rewrite rule identifiers differ");
 
-const appcmdSample = """
+const string appcmdSample = """
     <system.webServer>
         <globalModules>
             <add name="StaticFileModule" image="%windir%\system32\inetsrv\static.dll" />
