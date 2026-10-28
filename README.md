@@ -32,7 +32,7 @@ Apache/XAMPP has its own conditional HTTP 403 compatibility rule. Neither IIS im
 
 ## Download the Windows EXE
 
-1. Open **[v1.0.4 Stable Release](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.4)** and download `BabylonWebServerFix.exe` and optional `SHA256SUMS.txt` from **Assets**.
+1. Open **[v1.0.4 Stable Release](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.4)** and download `BabylonWebServerFix.exe` and `SHA256SUMS.txt` from **Assets**.
 2. Verify the SHA-256 checksum before deploying to multiple machines.
 3. Run the executable from an **elevated Command Prompt (Run as administrator)** on a test workstation.
 
@@ -40,9 +40,9 @@ The latest development build artifacts are also available through [Windows build
 
 The EXE is **unsigned** until a code-signing certificate is configured. GitHub Actions produces a self-contained .NET 10 single-file build; target machines do not need a separate .NET runtime or PowerShell scripts.
 
-## Offline IIS URL Rewrite installation and future updates
+## Optional IIS URL Rewrite installation and offline MSI
 
-The Microsoft IIS page currently publishes **URL Rewrite 2.1**. When explicit `--iis-mode rewrite` is selected, the utility checks for an existing registered `RewriteModule` using Microsoft.Web.Administration and a read-only appcmd fallback. **If present, it does not download or upgrade the module.** If those checks disagree, a warning identifies the inconsistency while the existing registration takes precedence. If appcmd fails and registration is uncertain, the tool refuses to download/reinstall blindly. Compatibility of a future Microsoft release must still be tested.
+The utility supports Microsoft IIS URL Rewrite 2.1. When explicit `--iis-mode rewrite` is selected, the utility checks for an existing registered `RewriteModule` using Microsoft.Web.Administration and a read-only appcmd fallback. **If present, it does not download or upgrade the module.** If those checks disagree, a warning identifies the inconsistency while the existing registration takes precedence. If appcmd fails and registration is uncertain, the tool refuses to download/reinstall blindly. Compatibility of a future Microsoft release must still be tested.
 
 If the installer URL is blocked, moved or retired, supply the **genuine Microsoft-signed x64 MSI** using one of these methods:
 
@@ -86,7 +86,7 @@ The native rule is installed or verified **before** the managed URL Rewrite rule
 
 `status` reports both managed IIS rule types. `remove-iis` removes both managed IIS rules without touching Apache or the WinINet cache. **Verified on BASE-IMAGE (2026-10-28):** `remove-iis` backed up IIS, removed the installed native rule, and a subsequent `status` confirmed both managed rules absent; IIS remained Started. This was a native-only removal test (the Rewrite rule was already absent). `remove` also removes the application's other managed settings. IIS Request Filtering must be enabled as a Windows IIS feature.
 
-**After `remove-iis`, Babylon compatibility is no longer configured for IIS.** To restore the default MSI-free behavior, run `BabylonWebServerFix.exe` (or `BabylonWebServerFix.exe install`). To reinstall the URL Rewrite rule explicitly, use `BabylonWebServerFix.exe install --iis-mode rewrite`.
+**After `remove-iis`, the utility's IIS compatibility rules are absent.** Reinstall only if Babylon actually suffers the legacy localhost conflict; use `install` for the native rule or `install --iis-mode rewrite` for URL Rewrite.
 
 **Deployment note:** this behavior is included in v1.0.4 Stable. **Both migration directions passed on BASE-IMAGE** (Native → Rewrite at 09:33 and Rewrite → Native at 09:34 on 2026-10-28), and the earlier Rewrite migration also passed a live Babylon translation check. Repeated-install idempotence, error-path rollback, the appcmd disagreement fallback path, and normal localhost page responses still need checking.
 
@@ -122,7 +122,7 @@ BabylonWebServerFix.exe install --cleanup-next-logon
 BabylonWebServerFix.exe --help
 ```
 
-Run `--help` for the complete option list. Notable options: `--site "Default Web Site"`, `--msi PATH`, `--apache-httpd PATH`, `--apache-config PATH`, `--log-path PATH` (requires `--enable-log`), `--cache-version 1,0,0,0`, and `--dry-run`.
+Run `--help` for the complete option list. **Never use bare `BabylonWebServerFix.exe` simply to inspect status:** with no arguments it performs `install`. Notable options: `--site "Default Web Site"`, `--msi PATH`, `--apache-httpd PATH`, `--apache-config PATH`, `--log-path PATH` (requires `--enable-log`), `--cache-version 1,0,0,0`, and `--dry-run`.
 
 ### Default behavior
 
@@ -168,7 +168,7 @@ The resulting EXE is `dist\BabylonWebServerFix.exe`. NuGet restore requires inte
 
 ## Testing and limitations
 
-Real-world verification on 2026-10-28 confirmed Babylon translation with both Apache/XAMPP and an active IIS configuration. For v1.0.4, native IIS filtering, both IIS rule-migration directions, RewriteModule reuse in dry-run, and `remove-iis` were exercised on BASE-IMAGE; Windows CI passed 65 offline smoke tests. Run `status`, `install --dry-run`, `install` and a repeat `install` on a **test** workstation before broader distribution. Verify Babylon translates, Apache serves a normal `http://localhost/` page, the managed request receives the intended behavior, and IIS/Apache preserve their port bindings.
+Real-world verification on 2026-10-28 confirmed Babylon translation with IIS/Apache compatibility rules in the legacy test, and also confirmed translation with the local-file UI while IIS was active and its managed rules were removed. For v1.0.4, native IIS filtering, both IIS rule-migration directions, RewriteModule reuse in dry-run, and `remove-iis` were exercised on BASE-IMAGE; Windows CI passed 65 offline smoke tests. Run `status`, `install --dry-run`, `install` and a repeat `install` on a **test** workstation before broader distribution. Verify Babylon translates, Apache serves a normal `http://localhost/` page, the managed request receives the intended behavior, and IIS/Apache preserve their port bindings.
 
 Read the [test matrix](docs/TEST_MATRIX.md). A green CI build checks compilation and smoke tests, **not** complete IIS/Apache integration. The stable release is intended for the tested IIS and XAMPP compatibility workflow; validate any other configuration before broad production deployment.
 
@@ -183,7 +183,7 @@ Read the [test matrix](docs/TEST_MATRIX.md). A green CI build checks compilation
 
 ## Releases
 
-**Latest stable: [v1.0.4](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.4)**. The successful Stable release workflow builds and tests the Windows x64 single-file executable, publishes `BabylonWebServerFix.exe` and `SHA256SUMS.txt`, verifies both asset names, and removes the superseded v1.0.0 and v0.1.3-preview.1 releases and their tags. Verify the executable's SHA-256 checksum before deployment. The EXE is unsigned.
+**Latest stable: [v1.0.4](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.4)**. Windows x64 self-contained release assets: `BabylonWebServerFix.exe` and `SHA256SUMS.txt`. Verify the checksum before deployment; the EXE is unsigned. The earlier v1.0.0 and preview releases were superseded. See [Stable release workflow](.github/workflows/stable-release.yml) for build and publication steps.
 
 ## License
 
