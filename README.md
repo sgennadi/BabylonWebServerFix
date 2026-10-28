@@ -17,7 +17,7 @@ Two Babylon interface-loading modes have been observed:
 | Localhost HTTP | `http://localhost/?uid=0&ver=12000&bld=13&iev=11&lngs=14,0,15,3,1,7` | If the web server intercepts this request and Babylon fails, use the compatibility fix. |
 | Local HTML file | `file:///C:/ProgramData/Babylon/LocalUI/wnd.html?uid=0&ver=12000&bld=13&iev=11&lngs=14,0,15,3,1,7` | If translation works, no compatibility fix is necessary. |
 
-An additional temporary document may appear at `%LOCALAPPDATA%\Temp\BWebData.html`. Its exact purpose is not confirmed. Loading `wnd.html` from disk does not prove that Babylon never accesses the network. The presence or date of `wnd.html` is **not** a reliable version or fix-detection method.
+An additional temporary document may appear at `%LOCALAPPDATA%\Temp\BWebData.html`. Its exact purpose is not confirmed. Loading `wnd.html` from disk does not prove that Babylon never accesses the network.
 
 The two interface-loading modes above are different from the utility's **two IIS rule types** described below.
 
