@@ -37,6 +37,12 @@ Expect(HostPolicy.ApacheRuleRequiresUpdate(true, false, true),
 Expect(HostPolicy.ApacheRuleRequiresUpdate(true, true, false),
     "Apache snippet changed; configuration update needed");
 
+Expect(CliOptions.Parse([]).Help, "no arguments show help");
+Expect(CliOptions.Parse(["/?"]).Help, "Windows slash question mark shows help");
+Expect(CliOptions.Parse(["--help"]).Help, "long help flag works");
+Expect(CliOptions.Parse(["-h"]).Help, "short help flag works");
+Expect(CliOptions.Parse(["install"]).Action == "install" && !CliOptions.Parse(["install"]).Help, "install requires explicit command");
+Expect(CliOptions.Usage.Contains("Examples:", StringComparison.Ordinal), "help contains example commands");
 var defaults = CliOptions.Parse(["install"]);
 Expect(!defaults.EnableLog && !defaults.CleanupNextLogon, "opt-in switches disabled by default");
 Expect(defaults.Site == "Default Web Site", "default IIS site");
