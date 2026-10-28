@@ -19,6 +19,7 @@ public sealed record CliOptions
     public bool SkipBabylonRestart { get; private set; }
     public bool SkipApacheRestart { get; private set; }
     public bool DryRun { get; private set; }
+    public bool FixedBabylon { get; private set; }
     public bool Help { get; private set; }
 
     public static CliOptions Parse(string[] args)
@@ -61,6 +62,7 @@ public sealed record CliOptions
                 case "--skip-babylon-restart": o.SkipBabylonRestart = true; break;
                 case "--skip-apache-restart": o.SkipApacheRestart = true; break;
                 case "--dry-run": o.DryRun = true; break;
+                case "--fixed-babylon": o.FixedBabylon = true; break;
                 case "--help": case "-h": o.Help = true; break;
                 default: throw new ArgumentException("Unknown option: " + args[i]);
             }
@@ -74,6 +76,8 @@ public sealed record CliOptions
             throw new ArgumentException("MSI installer options require --iis-mode rewrite, not native.");
         if (o.IisMode is not ("rewrite" or "native")) throw new ArgumentException("--iis-mode must be rewrite or native");
         if (o.MsiPath is not null && o.MsiUrl is not null) throw new ArgumentException("--msi and --msi-url cannot be combined");
+        if (o.FixedBabylon && o.Action != "install") throw new ArgumentException("--fixed-babylon is only valid for install");
+        if (o.FixedBabylon && (o.MsiPath is not null || o.MsiUrl is not null)) throw new ArgumentException("--fixed-babylon conflicts with MSI installer options");
         if (o.LogPath != null && !o.EnableLog) throw new ArgumentException("--log-path requires --enable-log");
         if (o.CleanupNextLogon && o.Action is not ("install" or "cache-only"))
             throw new ArgumentException("--cleanup-next-logon is only valid for install / cache-only");
@@ -109,6 +113,8 @@ public sealed record CliOptions
           --cache-version 1,0,0,0      Version of Active Setup registration
           --enable-log                  Create optional log (OFF by default)
           --log-path PATH               Custom log path, requires --enable-log
+          --fixed-babylon              Explicit confirmation that updated Babylon works without a fix;
+                                        skip all configuration/cache changes (install only)
           --dry-run                     Show intended changes without changing anything
           -h, --help                    Help
 
