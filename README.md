@@ -47,7 +47,7 @@ BabylonWebServerFix.exe install --dry-run
 BabylonWebServerFix.exe install
 ```
 
-**Without arguments**, `BabylonWebServerFix.exe` performs `install` (not `status`). Use `status` for a read-only check.
+**Without arguments**, the EXE displays help and examples without making changes. `/?`, `--help`, and `-h` do the same. Use the explicit `install` command to apply changes.
 
 To remove only the utility's IIS compatibility rules:
 
