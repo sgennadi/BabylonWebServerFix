@@ -36,10 +36,10 @@ If Babylon's **localhost HTTP** mode conflicts with a local web server, inspect 
 ```cmd
 BabylonWebServerFix.exe status
 BabylonWebServerFix.exe install --dry-run
-BabylonWebServerFix.exe install
+BabylonWebServerFix.exe
 ```
 
-Without arguments, the EXE performs **`install`**, not `status`.
+**Without arguments**, `BabylonWebServerFix.exe` performs `install` (not `status`). Use `status` for a read-only check.
 
 To remove only the utility's IIS compatibility rules:
 
