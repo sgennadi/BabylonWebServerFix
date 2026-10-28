@@ -15,20 +15,20 @@ permissions:
 jobs:
   stable-release:
     runs-on: windows-2025
+    defaults:
+      run:
+        shell: cmd
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
       - name: Validate release tag matches project version
-        shell: pwsh
         env:
           TAG: ${{ inputs.tag }}
         run: |
-          $version = ([xml](Get-Content 'src/BabylonWebServerFix/BabylonWebServerFix.csproj')).Project.PropertyGroup.Version
-          if ($env:TAG -ne "v$version") { throw "Tag $env:TAG does not match project v$version" }
+          for /f "delims=" %%V in ('dotnet msbuild src/BabylonWebServerFix/BabylonWebServerFix.csproj -getProperty:Version -nologo') do @if /I not "%TAG%"=="v%%V" exit /b 1
       - name: Build, smoke test, and publish x64
-        shell: cmd
         run: |
           dotnet build src/BabylonWebServerFix/BabylonWebServerFix.csproj -c Release
           if errorlevel 1 exit /b 1
@@ -36,67 +36,51 @@ jobs:
           if errorlevel 1 exit /b 1
           dotnet publish src/BabylonWebServerFix/BabylonWebServerFix.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=false -p:DebugType=none -p:DebugSymbols=false -o dist
           if errorlevel 1 exit /b 1
-          dist\BabylonWebServerFix.exe --help >NUL
+      - name: Verify help and examples in executable
+        run: |
+          dist\BabylonWebServerFix.exe > help.txt
           if errorlevel 1 exit /b 1
-      - name: Verify no-argument and slash-help behavior
-        shell: pwsh
-        run: |
-          $exe = 'dist/BabylonWebServerFix.exe'
-          $runs = @(
-            @{ Label = 'no args'; Args = @() },
-            @{ Label = '/?'; Args = @('/?') },
-            @{ Label = '--help'; Args = @('--help') },
-            @{ Label = '-h'; Args = @('-h') }
-          )
-          foreach ($test in $runs) {
-            $argv = [string[]]$test.Args
-            $output = & $exe @argv
-            if ($LASTEXITCODE -ne 0 -or -not (($output -join "`n") -match 'Examples:')) {
-              throw "Help verification failed for $($test.Label)"
-            }
-          }
+          findstr /C:"Examples:" help.txt >NUL
+          if errorlevel 1 exit /b 1
+          dist\BabylonWebServerFix.exe /? > help.txt
+          if errorlevel 1 exit /b 1
+          findstr /C:"Examples:" help.txt >NUL
+          if errorlevel 1 exit /b 1
+          dist\BabylonWebServerFix.exe --help > help.txt
+          if errorlevel 1 exit /b 1
+          findstr /C:"Examples:" help.txt >NUL
+          if errorlevel 1 exit /b 1
+          dist\BabylonWebServerFix.exe -h > help.txt
+          if errorlevel 1 exit /b 1
+          findstr /C:"Examples:" help.txt >NUL
+          if errorlevel 1 exit /b 1
+          del help.txt
       - name: Generate SHA-256 checksum
-        shell: pwsh
         run: |
-          $hash = (Get-FileHash 'dist/BabylonWebServerFix.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
-          Set-Content -Path 'dist/SHA256SUMS.txt' -Value "$hash *BabylonWebServerFix.exe" -Encoding ascii
-          if ((Get-Item 'dist/BabylonWebServerFix.exe').Length -lt 1000000) { throw 'Unexpectedly small EXE' }
+          for /f "tokens=1" %%H in ('certutil -hashfile "dist\BabylonWebServerFix.exe" SHA256 ^| findstr /R /I "^[0-9a-f][0-9a-f]*$"') do @echo %%H *BabylonWebServerFix.exe>dist\SHA256SUMS.txt
+          if not exist dist\SHA256SUMS.txt exit /b 1
+          for %%F in (dist\BabylonWebServerFix.exe) do @if %%~zF LSS 1000000 exit /b 1
       - name: Create or update stable release
-        shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
           TAG: ${{ inputs.tag }}
         run: |
-          gh release view $env:TAG --repo $env:GITHUB_REPOSITORY *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release upload $env:TAG 'dist/BabylonWebServerFix.exe' 'dist/SHA256SUMS.txt' --clobber --repo $env:GITHUB_REPOSITORY
-          } else {
-            gh release create $env:TAG 'dist/BabylonWebServerFix.exe' 'dist/SHA256SUMS.txt' --target $env:GITHUB_SHA --repo $env:GITHUB_REPOSITORY --title "$env:TAG Stable" --notes-file 'releases/v1.0.5.md' --latest
-          }
-          if ($LASTEXITCODE -ne 0) { throw 'GitHub release publish failed. Check RELEASE_TOKEN / Actions permissions.' }
-      - name: Verify assets before pruning old releases
-        shell: pwsh
+          gh release view "%TAG%" --repo "%GITHUB_REPOSITORY%" >NUL 2>&1
+          if errorlevel 1 (
+            gh release create "%TAG%" "dist/BabylonWebServerFix.exe" "dist/SHA256SUMS.txt" --target "%GITHUB_SHA%" --repo "%GITHUB_REPOSITORY%" --title "%TAG% Stable" --notes-file "releases/v1.0.5.md" --latest
+          ) else (
+            gh release upload "%TAG%" "dist/BabylonWebServerFix.exe" "dist/SHA256SUMS.txt" --clobber --repo "%GITHUB_REPOSITORY%"
+          )
+          if errorlevel 1 exit /b 1
+      - name: Verify published assets
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
           TAG: ${{ inputs.tag }}
         run: |
-          $assets = @(gh release view $env:TAG --repo $env:GITHUB_REPOSITORY --json assets --jq '.assets[].name')
-          if ($LASTEXITCODE -ne 0) { throw 'Could not verify published release' }
-          foreach ($required in @('BabylonWebServerFix.exe', 'SHA256SUMS.txt')) {
-            if ($assets -notcontains $required) { throw "Missing release asset: $required" }
-          }
-          Write-Host "Verified release $env:TAG with EXE and checksum."
-      - name: Remove superseded stable and preview releases
-        if: ${{ inputs.tag == 'v1.0.5' }}
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
-        run: |
-          foreach ($old in @('v1.0.4')) {
-            gh release view $old --repo $env:GITHUB_REPOSITORY *> $null
-            if ($LASTEXITCODE -eq 0) {
-              gh release delete $old --repo $env:GITHUB_REPOSITORY --yes --cleanup-tag
-              if ($LASTEXITCODE -ne 0) { throw "Failed to delete $old" }
-              Write-Host "Removed superseded release $old"
-            }
-          }
+          gh release view "%TAG%" --repo "%GITHUB_REPOSITORY%" --json assets --jq ".assets[].name" > assets.txt
+          if errorlevel 1 exit /b 1
+          findstr /X /C:"BabylonWebServerFix.exe" assets.txt >NUL
+          if errorlevel 1 exit /b 1
+          findstr /X /C:"SHA256SUMS.txt" assets.txt >NUL
+          if errorlevel 1 exit /b 1
+          del assets.txt
