@@ -6,12 +6,13 @@ The CLI must compile on `windows-2025` with .NET 10 before testing.
 |---|---|---|
 | Windows workstation without IIS/Apache | `install` makes no changes, does not delete cache, does not create log | [ ] |
 | IIS only, W3SVC stopped | Adds rule without starting W3SVC | [ ] |
-| IIS missing URL Rewrite, IIS/W3SVC running | Download official Microsoft MSI, validate trusted publisher through native WinTrust, install URL Rewrite 2.1 and create Babylon rule | [x] 2026-10-28 BASE-IMAGE log: W3SVC Started, MSI exit=0, rule installed, DONE; exact executable build/hash not recorded |
+| IIS missing URL Rewrite, IIS/W3SVC running | Validate the official Microsoft MSI via native WinTrust, install URL Rewrite 2.1 and create the Babylon rule | [x] 2026-10-28 BASE-IMAGE: W3SVC Started, MSI exit=0, rule installed, DONE. EXE SHA-256 matched published v0.1.3-preview.1 Release asset |
 | Downloaded URL Rewrite MSI cleanup | Automatically delete only the downloaded temporary MSI after installation | [ ] Code attempts cleanup in finally; file absence not confirmed in test log |
 | Unsigned or spoofed MSI | Reject without installation | [x] Windows CI negative signature test; spoofed subject covered by unit tests |
 | IIS already has Babylon rule v3/v10 | Idempotent, no duplicate, no unneeded changes | [ ] |
 | IIS running with local port 80 binding | Apply Babylon rewrite rule without stopping IIS or altering its binding | [x] 2026-10-28 BASE-IMAGE log: IIS state Started, http *:80:, rule installed |
-| IIS only, local port 80 website | Normal `/` works; Babylon interface translates | [ ] Babylon restart succeeded, but translation and normal HTTP response with IIS running are not shown in the console log |
+| Babylon translates with IIS active | Babylon Pro 12 translation works after URL Rewrite setup with IIS running on port 80 | [x] 2026-10-28 BASE-IMAGE: user confirmed translation works; exact release EXE verified by SHA-256 |
+| IIS only, local port 80 website | Normal `/` responds correctly while Babylon also translates | [ ] Translation confirmed, ordinary `http://localhost/` response with IIS active not separately verified |
 | XAMPP Apache 2.4 running on port 80, not service | Adds Apache snippet, `httpd -t`, direct process restart, TCP/80 listening | [x] Test workstation log |
 | Apache active on TCP/80, Babylon actually translates | Babylon Pro 12 translates while IIS is stopped and XAMPP Apache is running; HTTP 403 itself still needs verification | [x] Test workstation screenshot + log |
 | Apache stopped before `install` | Remains stopped | [ ] |
@@ -33,4 +34,4 @@ The CLI must compile on `windows-2025` with .NET 10 before testing.
 | `remove` | Only managed rules / Active Setup removed | [ ] |
 | Unsigned build SmartScreen behavior | Confirm deployment policies allow the exe, or sign release | [ ] |
 
-**Do not distribute until items relevant to the deployment are tested.** A 2026-10-28 BASE-IMAGE run reported success for the C# IIS URL Rewrite installation path while W3SVC was started, including MSI exit code 0, rule installation, Babylon process restart and WinINet cache cleanup without errors. This does **not** by itself confirm actual translation with IIS active, a normal IIS `http://localhost/` response, downloaded MSI file deletion, or the precise deployed EXE hash. Apache and Babylon translation were observed together on another workstation test; Apache HTTP 403 behavior and repeat-install idempotence still require targeted workstation validation.
+**Do not distribute broadly until items relevant to the deployment are tested.** A 2026-10-28 BASE-IMAGE run reported success for the C# IIS URL Rewrite installation path while W3SVC was started, including MSI exit code 0, rule installation, Babylon process restart and WinINet cache cleanup without errors. Translation with IIS active was subsequently confirmed by the user; the deployed EXE's SHA-256 exactly matches the public v0.1.3 Preview release. The normal IIS `http://localhost/` response and downloaded MSI file deletion remain unverified. Apache and Babylon translation were observed together on another workstation test; Apache HTTP 403 behavior and repeat-install idempotence still require targeted workstation validation.

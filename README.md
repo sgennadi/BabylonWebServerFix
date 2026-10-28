@@ -2,7 +2,7 @@
 
 **Windows x64 utility for Babylon Pro 12 compatibility with Microsoft IIS and Apache/XAMPP.**
 
-> **v0.1.3 Preview.** Windows CI and smoke tests are required for every change. Babylon translation and Apache on TCP/80 were demonstrated together on one Windows workstation; broader installation scenarios still need testing.
+> **v0.1.3 Preview.** Windows CI passes; Babylon translation was verified with Apache/XAMPP and separately with IIS active on port 80. The IIS test used an EXE whose SHA-256 matched the published release asset. Broader deployment scenarios still need testing.
 
 Babylon 12 embeds an MSHTML-based viewer that may request `http://localhost/?uid=...&ver=12000&bld=13&iev=11...`. A local web server can intercept that URL and replace Babylon's interface with a site response. This tool configures narrowly scoped server rules and optionally cleans temporary WinINet files without changing IP addresses, port bindings, Babylon installation files or licenses.
 
@@ -60,7 +60,7 @@ Run `--help` for the complete option list. Notable options: `--site "Default Web
 
 | Server | Managed behavior | Validation notes |
 |---|---|---|
-| IIS | URL Rewrite `AbortRequest` for the Babylon 12 `localhost` request | Requires Microsoft's URL Rewrite 2.1. IIS is not started automatically. |
+| IIS | URL Rewrite `AbortRequest` for the Babylon 12 `localhost` request | IIS was already running on a test PC; URL Rewrite MSI installed and Babylon translation worked. Normal site HTTP response still needs checking. IIS is not started automatically. |
 | Apache / XAMPP | Conditional HTTP **403** for the same narrow request | HTTP 403 is not equivalent to IIS connection abort. Translation worked on one test PC while XAMPP listened on TCP/80; explicit HTTP rule behavior remains to be tested. |
 | Neither | No-op | No server software is installed. |
 
@@ -90,7 +90,7 @@ The resulting EXE is `dist\BabylonWebServerFix.exe`. NuGet restore requires inte
 
 ## Testing and limitations
 
-Run `status`, `install --dry-run`, `install` and a repeat `install` on a **test** workstation before distribution. Verify Babylon translates, Apache serves a normal `http://localhost/` page, the managed request receives the intended behavior, and IIS/Apache preserve their port bindings. Repeat-install idempotence has offline regression tests; the v0.1.3 code still needs target-machine validation.
+Real-world verification on 2026-10-28 confirmed Babylon translation with both Apache/XAMPP and an active IIS configuration. The IIS test EXE hash matched the v0.1.3 Preview release binary. Run `status`, `install --dry-run`, `install` and a repeat `install` on a **test** workstation before broader distribution. Verify Babylon translates, Apache serves a normal `http://localhost/` page, the managed request receives the intended behavior, and IIS/Apache preserve their port bindings. Repeat-install idempotence has offline regression tests; the v0.1.3 code still needs target-machine validation.
 
 Read the [test matrix](docs/TEST_MATRIX.md). A green CI build checks compilation and smoke tests, **not** complete IIS/Apache integration. Do not treat the public preview as a stable enterprise release.
 
@@ -104,7 +104,7 @@ Read the [test matrix](docs/TEST_MATRIX.md). A green CI build checks compilation
 
 ## Releases
 
-After a successful `main` CI build and a workstation test, create a preview Git tag (for example `v0.1.3-preview.1`) and run **Actions → Preview release** with that existing tag. The workflow builds, tests, and publishes an **unsigned prerelease** EXE. Do not mark a release stable without additional workstation coverage.
+**v0.1.3 Preview is already published** at [GitHub Releases](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v0.1.3-preview.1). For a future version, after a successful `main` CI build and a workstation test, create a new preview Git tag (for example `v0.1.4-preview.1`) and run **Actions → Preview release** with that existing tag. The workflow builds, tests, and publishes an **unsigned prerelease** EXE. Do not mark a release stable without additional workstation coverage.
 
 ## License
 
