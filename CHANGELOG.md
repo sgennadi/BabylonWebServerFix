@@ -7,6 +7,7 @@
 - Refuse a blind MSI download if the module-registration query fails; preserve the configured native rule and avoid unnecessary IIS changes.
 - Add seven offline regression tests for appcmd output parsing, including real-world registration syntax, comment, error, and look-alike cases.
 - Keep default MSI-free native filtering and bidirectional rule migration unchanged. The cause of the earlier 09:33 redownload remains unconfirmed.
+- Workstation verification: after `status` showed native installed/Rewrite absent, `remove-iis` backed up IIS and removed the native rule; a second `status` confirmed both project-managed IIS rules absent while IIS stayed Started. No web-server module uninstallation was attempted.
 - Validated on BASE-IMAGE: v1.0.4 `install --iis-mode rewrite --dry-run` recognized the registered module, skipped MSI download, previewed the Rewrite/native migration, and completed successfully. The appcmd fallback and actual reinstall avoidance after switching still need separate validation.
 
 

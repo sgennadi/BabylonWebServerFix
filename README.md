@@ -60,7 +60,9 @@ BabylonWebServerFix.exe install
 
 The native rule is installed or verified **before** the managed URL Rewrite rule is removed. No Microsoft module is deliberately uninstalled; only this project's rules are changed. Both migrations back up IIS configuration before changes. **On 2026-10-28 at 09:34, this exact reverse migration was confirmed in a real BASE-IMAGE log**: native rule installed, previous Rewrite rule removed and IIS remained Started.
 
-`status` reports both managed IIS rule types. `remove-iis` removes both managed IIS rules without touching Apache or the WinINet cache. `remove` also removes the application's other managed settings. IIS Request Filtering must be enabled as a Windows IIS feature.
+`status` reports both managed IIS rule types. `remove-iis` removes both managed IIS rules without touching Apache or the WinINet cache. **Verified on BASE-IMAGE (2026-10-28):** `remove-iis` backed up IIS, removed the installed native rule, and a subsequent `status` confirmed both managed rules absent; IIS remained Started. This was a native-only removal test (the Rewrite rule was already absent). `remove` also removes the application's other managed settings. IIS Request Filtering must be enabled as a Windows IIS feature.
+
+**After `remove-iis`, Babylon compatibility is no longer configured for IIS.** To restore the default MSI-free behavior, run `BabylonWebServerFix.exe` (or `BabylonWebServerFix.exe install`). To reinstall the URL Rewrite rule explicitly, use `BabylonWebServerFix.exe install --iis-mode rewrite`.
 
 **Deployment note:** this behavior is in the unreleased development build, not the published v1.0.0 Stable. **Both migration directions have now passed on BASE-IMAGE** (Native → Rewrite at 09:33 and Rewrite → Native at 09:34 on 2026-10-28). The earlier Rewrite migration also passed a live Babylon translation check. Babylon was restarted after the 09:34 native migration, but the translation result after that specific run was not independently provided. Repeated-install idempotence, error-path rollback and normal localhost page responses still need checking.
 
