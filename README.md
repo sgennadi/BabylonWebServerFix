@@ -8,10 +8,10 @@ Babylon 12 embeds an MSHTML-based viewer that may request `http://localhost/?uid
 
 ## Download the Windows EXE
 
-1. Open **[Windows build and smoke tests](https://github.com/sgennadi/BabylonWebServerFix/actions/workflows/build.yml)**.
-2. Select the most recent **successful** run from `main`.
-3. Download the **`BabylonWebServerFix-win-x64`** artifact and extract `BabylonWebServerFix.exe`.
-4. Run the executable from an **elevated Command Prompt (Run as administrator)** on a test workstation.
+1. Open **[v0.1.3 Preview Release](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v0.1.3-preview.1)** and download `BabylonWebServerFix.exe` from **Assets**.
+2. Run the executable from an **elevated Command Prompt (Run as administrator)** on a test workstation.
+
+The latest pre-release build artifact is also available through [Windows build and smoke tests](https://github.com/sgennadi/BabylonWebServerFix/actions/workflows/build.yml).
 
 The EXE is **unsigned** until a code-signing certificate is configured. GitHub Actions produces a self-contained .NET 10 single-file build; target machines do not need a separate .NET runtime or PowerShell scripts.
 

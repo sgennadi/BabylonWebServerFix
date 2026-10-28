@@ -1,6 +1,11 @@
 name: Preview release
 
 on:
+  # One-time preview release request. Other main commits do not auto-publish.
+  push:
+    branches: [main]
+    paths:
+      - releases/v0.1.3-preview.1.md
   workflow_dispatch:
     inputs:
       tag:
@@ -17,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.sha }}
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
@@ -30,9 +35,24 @@ jobs:
           if errorlevel 1 exit /b 1
           dotnet publish src/BabylonWebServerFix/BabylonWebServerFix.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=false -o dist
           if errorlevel 1 exit /b 1
-      - name: Publish unsigned preview
+      - name: Publish v0.1.3 Preview from main
+        if: github.event_name == 'push'
+        shell: cmd
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v0.1.3-preview.1
+        run: |
+          gh release view "%TAG%" --repo "%GITHUB_REPOSITORY%" >NUL 2>&1
+          if not errorlevel 1 (
+            echo Preview release %TAG% already exists - no duplicate created.
+            exit /b 0
+          )
+          gh release create "%TAG%" "dist/BabylonWebServerFix.exe" --repo "%GITHUB_REPOSITORY%" --target "%GITHUB_SHA%" --title "BabylonWebServerFix v0.1.3 Preview" --prerelease --latest=false --notes-file "releases/v0.1.3-preview.1.md"
+          if errorlevel 1 exit /b 1
+      - name: Publish existing tag on manual dispatch
+        if: github.event_name == 'workflow_dispatch'
         shell: cmd
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
-        run: gh release create "%TAG%" "dist/BabylonWebServerFix.exe" --title "%TAG%" --prerelease --notes "Unsigned preview build. Validate IIS, Apache/XAMPP and Babylon on one test computer before deploying." --verify-tag
+        run: gh release create "%TAG%" "dist/BabylonWebServerFix.exe" --repo "%GITHUB_REPOSITORY%" --title "%TAG%" --prerelease --latest=false --notes "Unsigned preview build. Validate IIS, Apache/XAMPP and Babylon on one test computer before deploying." --verify-tag
