@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.4 — unreleased development (2026-10-28)
+
+- Harden RewriteModule detection: query Microsoft.Web.Administration first, then cross-check with read-only `appcmd list config /section:system.webServer/globalModules` when the managed API reports no module.
+- If appcmd confirms RewriteModule is registered, reuse it and skip MSI download; emit a diagnostic warning describing the disagreement.
+- Refuse a blind MSI download if the module-registration query fails; preserve the configured native rule and avoid unnecessary IIS changes.
+- Add seven offline regression tests for appcmd output parsing, including real-world registration syntax, comment, error, and look-alike cases.
+- Keep default MSI-free native filtering and bidirectional rule migration unchanged. The cause of the earlier 09:33 redownload remains unconfirmed.
+
+
 ## 1.0.3 — unreleased development (2026-10-28)
 
 - Make the built-in, MSI-free IIS Request Filtering mode the default for ordinary `install` and no-argument execution.

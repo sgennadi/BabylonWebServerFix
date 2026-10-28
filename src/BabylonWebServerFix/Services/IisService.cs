@@ -27,7 +27,7 @@ internal sealed class IisService(CliOptions options, DeployLog log)
             foreach (var binding in site.Bindings)
                 _log.Info($"Binding: {binding.Protocol} {binding.BindingInformation}");
 
-            var moduleFound = HasRewriteModule(manager);
+            var moduleFound = await DetectRewriteModuleAsync(manager);
             var native = new IisNativeRequestFiltering(_options, _log);
             if (mode == "status")
             {
@@ -85,7 +85,7 @@ internal sealed class IisService(CliOptions options, DeployLog log)
         // register a new schema and module. Reopen after successful installation.
         await EnsureRewriteAsync();
         using var updated = new ServerManager();
-        if (!HasRewriteModule(updated))
+        if (!await DetectRewriteModuleAsync(updated))
             throw new InvalidOperationException("RewriteModule not registered after MSI; restart Windows and retry.");
         ApplyRule(updated, mode);
         // After successfully installing URL Rewrite, remove only the
@@ -160,13 +160,68 @@ internal sealed class IisService(CliOptions options, DeployLog log)
         return false;
     }
 
+    private async Task<bool> DetectRewriteModuleAsync(ServerManager manager)
+    {
+        // The IIS managed API is the primary source. On some workstations it
+        // may disagree with appcmd (the IIS configuration CLI). Never download
+        // and install another MSI solely because this first lookup failed.
+        if (HasRewriteModule(manager))
+        {
+            if (_options.Action == "install" && _options.IisMode == "rewrite")
+                _log.Info("IIS RewriteModule is already registered; reusing existing module without MSI download.");
+            return true;
+        }
+
+        var appcmd = Path.Combine(Inetsrv, "appcmd.exe");
+        CommandResult probe;
+        try
+        {
+            probe = await WindowsSystem.RunAsync(appcmd,
+                ["list", "config", "/section:system.webServer/globalModules"], 20);
+        }
+        catch (Exception e) when (e is IOException or TimeoutException)
+        {
+            if (_options.Action == "status")
+            {
+                _log.Warn("Could not cross-check RewriteModule with appcmd: " + e.Message);
+                return false;
+            }
+            throw new InvalidOperationException(
+                "Cannot verify IIS RewriteModule registration with appcmd. " +
+                "Refusing to download/reinstall URL Rewrite while the registration state is uncertain.", e);
+        }
+
+        if (probe.ExitCode != 0)
+        {
+            if (_options.Action == "status")
+            {
+                _log.Warn($"Could not cross-check RewriteModule with appcmd (exit={probe.ExitCode}).");
+                return false;
+            }
+            throw new InvalidOperationException(
+                $"IIS appcmd module query failed (exit={probe.ExitCode}). " +
+                "Refusing an unnecessary MSI reinstall until module registration can be checked.");
+        }
+
+        if (IisModuleRegistration.ContainsRewriteModule(probe.Output))
+        {
+            _log.Warn("RewriteModule is registered according to appcmd but was not found by the managed IIS API. " +
+                      "Skipping MSI download and using the existing module.");
+            return true;
+        }
+
+        if (_options.Action == "install" && _options.IisMode == "rewrite")
+            _log.Info("IIS RewriteModule not registered according to either API; signed MSI installation is required.");
+        return false;
+    }
+
     private static bool HasRewriteModule(ServerManager manager)
     {
         var modules = manager.GetApplicationHostConfiguration()
             .GetSection("system.webServer/globalModules").GetCollection();
         foreach (ConfigurationElement module in modules)
         {
-            if (string.Equals(Convert.ToString(module.GetAttributeValue("name")), "RewriteModule", StringComparison.Ordinal))
+            if (string.Equals(Convert.ToString(module.GetAttributeValue("name")), "RewriteModule", StringComparison.OrdinalIgnoreCase))
                 return true;
         }
         return false;

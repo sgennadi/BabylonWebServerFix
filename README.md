@@ -2,7 +2,7 @@
 
 **Windows x64 utility for Babylon Pro 12 compatibility with Microsoft IIS and Apache/XAMPP.**
 
-> **Latest published release: v1.0.0 Stable.** In `main`, **v1.0.3 Development** now defaults to built-in IIS Request Filtering without URL Rewrite. On 2026-10-28, Babylon Pro 12 translation succeeded with native filtering and IIS running on a test workstation. Switching between native and Rewrite modes cleans up only the project's previous IIS rule. Ordinary site responses and the brief initial Babylon error flash still need checking.
+> **Latest published release: v1.0.0 Stable.** In `main`, **v1.0.4 Development** defaults to built-in IIS Request Filtering without URL Rewrite. Both directions of mode switching have been verified on BASE-IMAGE. The Rewrite detection now also checks IIS through appcmd before downloading MSI, to avoid a needless reinstall when the managed API misses a registered module. Ordinary site responses and the brief initial Babylon error flash still need checking.
 
 Babylon 12 embeds an MSHTML-based viewer that may request `http://localhost/?uid=...&ver=12000&bld=13&iev=11...`. A local web server can intercept that URL and replace Babylon's interface with a site response. This tool configures narrowly scoped server rules and optionally cleans temporary WinINet files without changing IP addresses, port bindings, Babylon installation files or licenses.
 
@@ -18,7 +18,7 @@ The EXE is **unsigned** until a code-signing certificate is configured. GitHub A
 
 ## Offline IIS URL Rewrite installation and future updates
 
-The Microsoft IIS page currently publishes **URL Rewrite 2.1**. This utility checks IIS for an existing `RewriteModule` first: **if present, it does not download or upgrade the module**, even when newer releases become available. Compatibility of a future Microsoft release must still be tested.
+The Microsoft IIS page currently publishes **URL Rewrite 2.1**. When explicit `--iis-mode rewrite` is selected, the utility checks for an existing registered `RewriteModule` using Microsoft.Web.Administration and a read-only appcmd fallback. **If present, it does not download or upgrade the module.** If those checks disagree, a warning identifies the inconsistency while the existing registration takes precedence. If appcmd fails and registration is uncertain, the tool refuses to download/reinstall blindly. Compatibility of a future Microsoft release must still be tested.
 
 If the installer URL is blocked, moved or retired, supply the **genuine Microsoft-signed x64 MSI** using one of these methods:
 
@@ -50,7 +50,7 @@ Babylon Pro 12 translation **worked on a test workstation with IIS running** aft
 BabylonWebServerFix.exe install --iis-mode rewrite
 ```
 
-This installs or reuses Microsoft URL Rewrite, creates the managed Rewrite rule, and **then removes the managed native filtering rule**, so the two rules do not remain active together. **Verified on BASE-IMAGE on 2026-10-28:** an official Microsoft MSI was downloaded and installed successfully (exit 0), the Rewrite rule was created, the native rule was removed, Babylon restarted, and the user confirmed translation works. If the MSI download or installation fails, the existing native rule is intended to remain in place; this failure path has not yet been tested on a workstation. To use an offline installer, place the signed MSI beside the EXE or use `--msi PATH`; supplying `--msi` or `--msi-url` without `--iis-mode` automatically selects Rewrite. **Note:** the 09:33 test downloaded the MSI even though an earlier test had installed URL Rewrite. We have not verified whether the module was removed, unregistered, or misdetected between tests. Reuse without downloading remains an open integration check.
+This installs or reuses Microsoft URL Rewrite, creates the managed Rewrite rule, and **then removes the managed native filtering rule**, so the two rules do not remain active together. **Verified on BASE-IMAGE on 2026-10-28:** an official Microsoft MSI was downloaded and installed successfully (exit 0), the Rewrite rule was created, the native rule was removed, Babylon restarted, and the user confirmed translation works. If the MSI download or installation fails, the existing native rule is intended to remain in place; this failure path has not yet been tested on a workstation. To use an offline installer, place the signed MSI beside the EXE or use `--msi PATH`; supplying `--msi` or `--msi-url` without `--iis-mode` automatically selects Rewrite. **Note:** on 2026-10-28 at 09:33, the utility downloaded the MSI despite an earlier successful installation. A later `appcmd list config /section:system.webServer/globalModules` command positively listed `RewriteModule`. The registration state at 09:33 is not independently known; v1.0.4 adds an appcmd fallback check and diagnostic output to prevent a redundant reinstall when appcmd currently confirms the module. That new detection path still needs a workstation test.
 
 Switching back to default native filtering is equally simple:
 

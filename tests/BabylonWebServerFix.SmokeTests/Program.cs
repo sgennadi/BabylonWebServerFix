@@ -161,4 +161,32 @@ Expect(!HostPolicy.NativeIisMatches("uid=0&ver=13000&bld=13&iev=11"),
 Expect(HostPolicy.NativeIisRuleName != HostPolicy.RuleName,
     "native IIS and URL Rewrite rule identifiers differ");
 
+const appcmdSample = """
+    <system.webServer>
+        <globalModules>
+            <add name="StaticFileModule" image="%windir%\system32\inetsrv\static.dll" />
+            <add name="RewriteModule" image="%SystemRoot%\system32\inetsrv\rewrite.dll" />
+        </globalModules>
+    </system.webServer>
+    """;
+Expect(IisModuleRegistration.ContainsRewriteModule(appcmdSample),
+    "appcmd globalModules detects an installed RewriteModule");
+Expect(IisModuleRegistration.ContainsRewriteModule(
+    "    <add image=\"rewrite.dll\" name=\"rewritemodule\" />"),
+    "appcmd accepts case-insensitive module names and varying attribute order");
+Expect(!IisModuleRegistration.ContainsRewriteModule(
+    "    <add name=\"RewriteModuleExtension\" image=\"other.dll\" />"),
+    "appcmd rejects similarly named modules");
+Expect(!IisModuleRegistration.ContainsRewriteModule(
+    "    <remove name=\"RewriteModule\" />"),
+    "appcmd does not count module-removal entries");
+Expect(!IisModuleRegistration.ContainsRewriteModule(
+    "    <!-- <add name=\"RewriteModule\" image=\"rewrite.dll\" /> -->"),
+    "appcmd does not accept commented-out module entries");
+Expect(!IisModuleRegistration.ContainsRewriteModule(
+    "ERROR ( message:Configuration section could not be read. )"),
+    "appcmd does not infer module registration from an error");
+Expect(!IisModuleRegistration.ContainsRewriteModule(""),
+    "empty IIS module output is not evidence of registration");
+
 Console.WriteLine($"Passed {count} smoke tests.");
