@@ -1,12 +1,6 @@
 name: Stable release
 
 on:
-  # One-time automated publication trigger for the v1.0.0 release. After
-  # successful publication this push trigger is removed from main.
-  push:
-    branches: [main]
-    paths:
-      - releases/v1.0.0.md
   workflow_dispatch:
     inputs:
       tag:
@@ -23,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.sha }}
+          ref: ${{ inputs.tag }}
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
@@ -44,22 +38,7 @@ jobs:
           for /f "delims=" %%H in ('certutil -hashfile "dist\BabylonWebServerFix.exe" SHA256 ^| findstr /R /I "^[0-9a-f][0-9a-f]*$"') do @echo %%H *BabylonWebServerFix.exe> "dist\SHA256SUMS.txt"
           if not exist "dist\SHA256SUMS.txt" exit /b 1
           type "dist\SHA256SUMS.txt"
-      - name: Publish v1.0.0 Stable
-        if: github.event_name == 'push'
-        shell: cmd
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: v1.0.0
-        run: |
-          gh release view "%TAG%" --repo "%GITHUB_REPOSITORY%" >NUL 2>&1
-          if not errorlevel 1 (
-            echo Stable release %TAG% already exists - no duplicate published.
-            exit /b 0
-          )
-          gh release create "%TAG%" "dist/BabylonWebServerFix.exe" "dist/SHA256SUMS.txt" --repo "%GITHUB_REPOSITORY%" --target "%GITHUB_SHA%" --title "BabylonWebServerFix v1.0.0" --notes-file "releases/v1.0.0.md"
-          if errorlevel 1 exit /b 1
-      - name: Publish existing tag on manual dispatch
-        if: github.event_name == 'workflow_dispatch'
+      - name: Publish stable release from existing tag
         shell: cmd
         env:
           GH_TOKEN: ${{ github.token }}
