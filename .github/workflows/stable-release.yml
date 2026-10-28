@@ -41,10 +41,18 @@ jobs:
       - name: Verify no-argument and slash-help behavior
         shell: pwsh
         run: |
-          foreach ($argSet in @(@(), @('/?'), @('--help'), @('-h'))) {
-            $result = if ($argSet.Count -eq 0) { & 'dist/BabylonWebServerFix.exe' } else { & 'dist/BabylonWebServerFix.exe' @argSet }
-            if ($LASTEXITCODE -ne 0 -or -not (($result -join "`n") -match 'Examples:')) {
-              throw "Help verification failed for: $($argSet -join ' ')"
+          $exe = 'dist/BabylonWebServerFix.exe'
+          $runs = @(
+            @{ Label = 'no args'; Args = @() },
+            @{ Label = '/?'; Args = @('/?') },
+            @{ Label = '--help'; Args = @('--help') },
+            @{ Label = '-h'; Args = @('-h') }
+          )
+          foreach ($test in $runs) {
+            $argv = [string[]]$test.Args
+            $output = & $exe @argv
+            if ($LASTEXITCODE -ne 0 -or -not (($output -join "`n") -match 'Examples:')) {
+              throw "Help verification failed for $($test.Label)"
             }
           }
       - name: Generate SHA-256 checksum
