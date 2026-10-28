@@ -2,13 +2,13 @@
 
 **Windows x64 utility for Babylon Pro 12 compatibility with Microsoft IIS and Apache/XAMPP.**
 
-> **Latest published release: v1.0.0 Stable.** In `main`, **v1.0.4 Development** defaults to built-in IIS Request Filtering without URL Rewrite. Both directions of mode switching have been verified on BASE-IMAGE. The Rewrite detection now also checks IIS through appcmd before downloading MSI, to avoid a needless reinstall when the managed API misses a registered module. Ordinary site responses and the brief initial Babylon error flash still need checking.
+> **Latest published release: v1.0.4 Stable.** It defaults to built-in IIS Request Filtering without URL Rewrite, includes safe bidirectional migration between native filtering and URL Rewrite, and reuses a registered RewriteModule without unnecessary MSI download. Both migration directions and `remove-iis` were verified on BASE-IMAGE. Ordinary site responses, the appcmd disagreement fallback path, and the brief initial Babylon error flash still need checking.
 
 Babylon 12 embeds an MSHTML-based viewer that may request `http://localhost/?uid=...&ver=12000&bld=13&iev=11...`. A local web server can intercept that URL and replace Babylon's interface with a site response. This tool configures narrowly scoped server rules and optionally cleans temporary WinINet files without changing IP addresses, port bindings, Babylon installation files or licenses.
 
 ## Download the Windows EXE
 
-1. Open **[v1.0.0 Stable Release](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.0)** and download `BabylonWebServerFix.exe` and optional `SHA256SUMS.txt` from **Assets**.
+1. Open **[v1.0.4 Stable Release](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.4)** and download `BabylonWebServerFix.exe` and optional `SHA256SUMS.txt` from **Assets**.
 2. Verify the SHA-256 checksum before deploying to multiple machines.
 3. Run the executable from an **elevated Command Prompt (Run as administrator)** on a test workstation.
 
@@ -32,7 +32,7 @@ For network deployments, make the shared MSI and EXE read-only to students; only
 
 ## Default IIS mode: no URL Rewrite MSI
 
-The `main` development branch now uses IIS's built-in **Request Filtering** by default. This mode needs **no separate Microsoft URL Rewrite MSI** and does not download anything.
+v1.0.4 uses IIS's built-in **Request Filtering** by default. This mode needs **no separate Microsoft URL Rewrite MSI** and does not download anything.
 
 ```cmd
 BabylonWebServerFix.exe status
@@ -64,7 +64,7 @@ The native rule is installed or verified **before** the managed URL Rewrite rule
 
 **After `remove-iis`, Babylon compatibility is no longer configured for IIS.** To restore the default MSI-free behavior, run `BabylonWebServerFix.exe` (or `BabylonWebServerFix.exe install`). To reinstall the URL Rewrite rule explicitly, use `BabylonWebServerFix.exe install --iis-mode rewrite`.
 
-**Deployment note:** this behavior is in the unreleased development build, not the published v1.0.0 Stable. **Both migration directions have now passed on BASE-IMAGE** (Native → Rewrite at 09:33 and Rewrite → Native at 09:34 on 2026-10-28). The earlier Rewrite migration also passed a live Babylon translation check. Babylon was restarted after the 09:34 native migration, but the translation result after that specific run was not independently provided. Repeated-install idempotence, error-path rollback and normal localhost page responses still need checking.
+**Deployment note:** this behavior is included in v1.0.4 Stable. **Both migration directions passed on BASE-IMAGE** (Native → Rewrite at 09:33 and Rewrite → Native at 09:34 on 2026-10-28), and the earlier Rewrite migration also passed a live Babylon translation check. Repeated-install idempotence, error-path rollback, the appcmd disagreement fallback path, and normal localhost page responses still need checking.
 
 ## Quick start (Command Prompt / CMD)
 
@@ -144,7 +144,7 @@ The resulting EXE is `dist\BabylonWebServerFix.exe`. NuGet restore requires inte
 
 ## Testing and limitations
 
-Real-world verification on 2026-10-28 confirmed Babylon translation with both Apache/XAMPP and an active IIS configuration. The IIS test EXE hash matched the v0.1.3 Preview release binary; v1.0.0 retains the same operational logic with a version update. Run `status`, `install --dry-run`, `install` and a repeat `install` on a **test** workstation before broader distribution. Verify Babylon translates, Apache serves a normal `http://localhost/` page, the managed request receives the intended behavior, and IIS/Apache preserve their port bindings. Repeat-install idempotence has offline regression tests; repeat-install behavior and other configurations still require wider target-machine validation.
+Real-world verification on 2026-10-28 confirmed Babylon translation with both Apache/XAMPP and an active IIS configuration. For v1.0.4, native IIS filtering, both IIS rule-migration directions, RewriteModule reuse in dry-run, and `remove-iis` were exercised on BASE-IMAGE; Windows CI passed 65 offline smoke tests. Run `status`, `install --dry-run`, `install` and a repeat `install` on a **test** workstation before broader distribution. Verify Babylon translates, Apache serves a normal `http://localhost/` page, the managed request receives the intended behavior, and IIS/Apache preserve their port bindings.
 
 Read the [test matrix](docs/TEST_MATRIX.md). A green CI build checks compilation and smoke tests, **not** complete IIS/Apache integration. The stable release is intended for the tested IIS and XAMPP compatibility workflow; validate any other configuration before broad production deployment.
 
@@ -159,7 +159,7 @@ Read the [test matrix](docs/TEST_MATRIX.md). A green CI build checks compilation
 
 ## Releases
 
-**v1.0.0 Stable** is published at [GitHub Releases](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.0). The earlier [v0.1.3 Preview](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v0.1.3-preview.1) remains available for comparison. Stable packages include an unsigned EXE and a SHA-256 checksum file. The manual stable-release workflow requires an existing tag for future releases; new versions should be tested on Windows before publishing.
+**v1.0.4 Stable** is published at [GitHub Releases](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.4). The earlier [v1.0.0 Stable](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.0) and [v0.1.3 Preview](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v0.1.3-preview.1) remain available for comparison. Stable packages include an unsigned EXE and a SHA-256 checksum file. The manual stable-release workflow requires an existing tag for future releases; new versions should be tested on Windows before publishing.
 
 ## License
 

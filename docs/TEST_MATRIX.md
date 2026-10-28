@@ -1,4 +1,4 @@
-# Validation matrix for stable 1.0.0 / v1.0.3 development
+# Validation matrix for stable 1.0.4
 
 The CLI must compile on `windows-2025` with .NET 10 before testing.
 

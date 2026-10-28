@@ -1,7 +1,8 @@
 # Changelog
 
-## 1.0.4 — unreleased development (2026-10-28)
+## 1.0.4 — stable release (2026-10-28)
 
+- This stable release includes the preceding 1.0.1–1.0.3 development changes: MSI-source hardening, MSI-free native IIS filtering, `remove-iis`, and safe bidirectional migration between native filtering and URL Rewrite.
 - Harden RewriteModule detection: query Microsoft.Web.Administration first, then cross-check with read-only `appcmd list config /section:system.webServer/globalModules` when the managed API reports no module.
 - If appcmd confirms RewriteModule is registered, reuse it and skip MSI download; emit a diagnostic warning describing the disagreement.
 - Refuse a blind MSI download if the module-registration query fails; preserve the configured native rule and avoid unnecessary IIS changes.
