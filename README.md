@@ -15,7 +15,7 @@ Babylon Pro 12 has been observed using **two different MSHTML document URLs**. T
 | Legacy localhost HTTP | `http://localhost/?uid=0&ver=12000&bld=13&iev=11&lngs=14,0,15,3,1,7` | If IIS/Apache listens on port 80 and Babylon shows the web server page or translation breaks, this compatibility utility can be used. |
 | Local-file HTML | `file://C:\\ProgramData\\Babylon\\LocalUI\\wnd.html?uid=0&ver=12000&bld=13&iev=11&lngs=14,0,15,3,1,7` | If translation works with IIS/Apache running **without** the compatibility rules, **do not run install**. Nothing needs fixing. |
 
-A second local document was observed: `file://C:\\Users\\Student\\AppData\\Local\\Temp\\BWebData.html` (user profile path varies). The local-file mode still uses MSHTML, and bundled JavaScript contains remote HTTP service URLs. Loading the main UI from a file **does not prove that Babylon makes zero network connections**, nor does the presence of `wnd.html` alone prove a fixed build.
+A second local document was observed: `%LOCALAPPDATA%\\Temp\\BWebData.html` (user profile path varies). The local-file mode still uses MSHTML, and bundled JavaScript contains remote HTTP service URLs. Loading the main UI from a file **does not prove that Babylon makes zero network connections**, nor does the presence of `wnd.html` alone prove a fixed build.
 
 **Real-world validation (BASE-IMAGE, 2026-10-28):** IIS was running on TCP/80; both managed IIS rules were absent after `remove-iis`; Babylon displayed a local-file UI and translation worked normally. No compatibility fix was needed on that workstation. This confirms the result for the tested installation, not for every version of Babylon.
 
