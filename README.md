@@ -25,9 +25,9 @@ The two interface-loading modes above are different from the utility's **two IIS
 
 Download `BabylonWebServerFix.exe` and `SHA256SUMS.txt` from [v1.0.5 Stable](https://github.com/sgennadi/BabylonWebServerFix/releases/tag/v1.0.5). Verify the checksum before deployment.
 
-The EXE is an unsigned, self-contained .NET 10 Windows x64 executable. The target machine does not require a separate .NET runtime or PowerShell.
+The EXE is an unsigned, self-contained .NET 10 Windows x64 executable. The target machine does not require a separate .NET runtime.
 
-Run mutating commands from an elevated Command Prompt or PowerShell. The `status` command is read-only and does not require elevation.
+Run mutating commands from an elevated Command Prompt. The `status` command is read-only and does not require elevation.
 
 ## Quick start
 
