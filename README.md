@@ -2,7 +2,7 @@
 
 A Windows x64 command-line utility that helps **Babylon Pro 12** coexist with local development web servers **Microsoft IIS** and **Apache HTTP Server / XAMPP** on the same workstation.
 
-> **Preview source release (v0.1.0). Not yet verified by a native Windows build or a hardware/lab deployment.** The included PowerShell v10 is retained as the previously tested implementation. Check functionality on one disposable/test workstation before any classroom or enterprise rollout.
+> **Preview (v0.1.1). The initial version passed Windows CI; this XAMPP restart fix still requires a real workstation test.** The included PowerShell v10 is retained as the previously tested implementation. Check functionality on one disposable/test workstation before any classroom or enterprise rollout.
 
 ## Why it exists
 
@@ -56,7 +56,7 @@ Other flags: `--site "Default Web Site"`, `--msi PATH`, `--apache-httpd PATH`, `
 
 - **Babylon:** only if already running, and only if an interactive, non-elevated restart in the original user session can be prepared safely. Otherwise it is left alone. `--skip-babylon-restart` opts out.
 - **Apache as Windows service:** uses `httpd -k restart -n SERVICE`.
-- **XAMPP console Apache:** uses the installation's `apache_stop.bat` / `apache_start.bat` and checks port 80. Only from an elevated interactive user session, not SYSTEM/Session 0. A previously stopped Apache remains stopped.
+- **XAMPP console Apache:** starts the selected `httpd.exe` directly with `-d ROOT -f CONFIG`. Bundled XAMPP BATs are not called because they may contain unresolved installation placeholders or block in the foreground. Restarts only Apache processes from the selected executable in the **same user and session**, and verifies TCP/80. Console processes are forcibly terminated during this operation; existing HTTP requests can be interrupted. Use `--skip-apache-restart` to opt out. A previously stopped Apache remains stopped.
 - **IIS:** it is not started or restarted automatically.
 
 > **Security:** run the tool only from a trusted directory and ensure the XAMPP `.bat` files and Apache configuration are not writable by untrusted users before using an elevated administrator account. Do not place a downloaded executable in an untrusted student-writable share.
@@ -79,7 +79,7 @@ Other flags: `--site "Default Web Site"`, `--msi PATH`, `--apache-httpd PATH`, `
 4. **Verify the Apache behavior separately**: a `403` response is not the same as IIS `AbortRequest`; the Apache rule may not fix Babylon on every host.
 5. Test `remove`, reinstall, reboots, active student sessions, XAMPP restarts, multiple users and cache cleanup behavior before deploying through GPO or imaging.
 
-The source build requires Windows and .NET 10; the source code was statically reviewed here, but **could not be compiled in this working environment**, which does not have the .NET SDK. The .NET-specific IIS integration in this C# port is not yet validated on a workstation. GitHub Actions includes native Windows build and smoke-test steps; a green workflow is required before distributing the app.
+The source build requires Windows and .NET 10. GitHub Actions compiles the project on Windows and runs smoke tests; a green build does **not** validate full IIS/XAMPP/Babylon integration. Always validate on a test workstation before deployment.
 
 ## Repository layout
 

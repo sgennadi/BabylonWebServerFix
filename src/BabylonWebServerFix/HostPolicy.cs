@@ -32,6 +32,10 @@ public static class HostPolicy
     public static string ApacheIncludeBlock(string absoluteSnippetPath) =>
         BeginMarker + "\r\nInclude \"" + absoluteSnippetPath.Replace('\\', '/') + "\"\r\n" + EndMarker + "\r\n";
 
+    // Start the selected XAMPP binary directly instead of using unreliable BATs.
+    public static string[] XamppStartArguments(string root, string config) =>
+        ["-d", root, "-f", config];
+
     public static string[] DistinctWindowsPaths(IEnumerable<string> paths) =>
         paths.Where(p => !string.IsNullOrWhiteSpace(p))
              .Select(p => p.Trim().Trim('"').Replace('/', '\\').TrimEnd('\\'))

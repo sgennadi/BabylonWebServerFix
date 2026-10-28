@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1-preview (2026-10-28)
+
+- Fix XAMPP console restart: bundled apache_stop.bat may contain an unresolved @@BITROCK_INSTALLDIR@@ token, and apache_start.bat may block in the foreground.
+- Stop only processes matching the selected XAMPP executable, user and session; never use global taskkill by process name.
+- Restart the validated Apache binary with explicit -d and -f arguments, then confirm a TCP/80 listener.
+- Attempt to restart Apache with restored configuration after a failed update.
+- Retain IIS, Babylon restart and WinINet cache behavior.
+
+
 ## 0.1.0-preview.1 — source preview
 
 - Initial C# 14 / .NET 10 Windows x64 CLI port of PowerShell v10.

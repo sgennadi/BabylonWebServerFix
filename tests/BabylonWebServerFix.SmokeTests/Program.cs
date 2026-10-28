@@ -23,6 +23,11 @@ Expect(HostPolicy.ApacheIncludeBlock(@"C:\xampp\apache\conf\babylon12-localhost-
 Expect(HostPolicy.DistinctWindowsPaths([@"c:\xampp\apache\bin\httpd.exe", @"C:\XAMPP\Apache\Bin\httpd.exe"]).Length == 1,
     "XAMPP process case-insensitive deduplication");
 
+var xamppArgs = HostPolicy.XamppStartArguments(@"C:\xampp\apache", @"C:\xampp\apache\conf\httpd.conf");
+Expect(xamppArgs.Length == 4 && xamppArgs[0] == "-d" && xamppArgs[2] == "-f", "XAMPP direct launch includes root and config switches");
+Expect(xamppArgs[1] == @"C:\xampp\apache" && xamppArgs[3].EndsWith(@"conf\httpd.conf", StringComparison.OrdinalIgnoreCase),
+    "XAMPP restart uses the same explicit configuration that was validated");
+
 var defaults = CliOptions.Parse(["install"]);
 Expect(!defaults.EnableLog && !defaults.CleanupNextLogon, "opt-in switches disabled by default");
 Expect(defaults.Site == "Default Web Site", "default IIS site");

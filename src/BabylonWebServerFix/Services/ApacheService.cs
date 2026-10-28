@@ -170,6 +170,7 @@ internal sealed class ApacheService(CliOptions options, DeployLog log, ApacheTar
         File.Copy(_target.Config, backup, overwrite: false);
         _log.Info("Apache config backup: " + backup);
         var originalSnippet = snippetExists ? await File.ReadAllBytesAsync(_target.Snippet) : null;
+        bool apacheWasRunning = GetRunningApache().Any(p => WindowsSystem.SamePath(p.Exe, _target.Exe));
         try
         {
             if (mode == "install")
@@ -200,7 +201,26 @@ internal sealed class ApacheService(CliOptions options, DeployLog log, ApacheTar
             if (originalSnippet is null) { if (File.Exists(_target.Snippet)) File.Delete(_target.Snippet); }
             else await File.WriteAllBytesAsync(_target.Snippet, originalSnippet);
             _log.Warn("Apache config restored after failure.");
-            try { if (!_options.SkipApacheRestart) await RestartAsync(); } catch { }
+            if (!_options.SkipApacheRestart)
+            {
+                try
+                {
+                    // A failed restart may have stopped Apache completely. In that case
+                    // restarting an already-stopped server is a no-op; recover explicitly
+                    // after restoring the original Apache configuration.
+                    bool nowRunning = GetRunningApache().Any(p => WindowsSystem.SamePath(p.Exe, _target.Exe));
+                    if (apacheWasRunning && !nowRunning && _target.ServiceName is null && _target.IsXampp)
+                    {
+                        _log.Warn("Trying to recover stopped XAMPP using restored Apache configuration.");
+                        await StartXamppAsync();
+                    }
+                    else if (nowRunning) await RestartAsync();
+                }
+                catch (Exception recoveryError)
+                {
+                    _log.Warn("Apache recovery after rollback failed: " + recoveryError.Message);
+                }
+            }
             throw;
         }
     }
@@ -251,48 +271,98 @@ internal sealed class ApacheService(CliOptions options, DeployLog log, ApacheTar
             return;
         }
         var other = GetRunningApache().Where(p => !WindowsSystem.SamePath(p.Exe, _target.Exe)).ToArray();
-        if (other.Length > 0) { _log.Warn("Other Apache installations running; XAMPP batch restart skipped."); return; }
-        var xampp = Directory.GetParent(_target.Root)!.FullName;
-        var stop = Path.Combine(xampp, "apache_stop.bat");
-        var start = Path.Combine(xampp, "apache_start.bat");
-        if (!File.Exists(stop) || !File.Exists(start)) { _log.Warn("XAMPP batch files missing; restart manually."); return; }
-        _log.Info("Restarting XAMPP Apache via apache_stop.bat / apache_start.bat.");
-        await RunBatchAsync(stop, wait: true);
-        bool stopped = false;
-        for (int i = 0; i < 30; i++)
+        if (other.Length > 0) { _log.Warn("Other Apache installations running; XAMPP restart skipped."); return; }
+
+        // Never terminate Apache from a different logon or another desktop session.
+        // Otherwise a SYSTEM/elevated run could break unrelated user sessions.
+        using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+        string? callerSid = identity.User?.Value;
+        int callerSession = Process.GetCurrentProcess().SessionId;
+        if (callerSid is null || running.Any(p =>
+            WindowsSystem.OwnerSid(p.Id) != callerSid || GetSessionId(p.Id) != callerSession))
         {
-            if (GetRunningApache().All(p => !WindowsSystem.SamePath(p.Exe, _target.Exe))) { stopped = true; break; }
-            await Task.Delay(500);
+            _log.Warn("XAMPP belongs to a different user or session; leaving it running. Restart from its owner's elevated session.");
+            return;
         }
-        if (!stopped) { _log.Warn("XAMPP did not stop; not starting a duplicate process."); return; }
-        await RunBatchAsync(start, wait: false);
+
+        // Some XAMPP distributions ship apache_stop.bat with an unresolved
+        // @@BITROCK_INSTALLDIR@@ token. Others stop every httpd.exe on the PC.
+        // Both are unsafe for automated management, so do not run those BATs.
+        // Apache's -k stop/restart only works for Windows services; here we
+        // terminate PIDs owned by this exact XAMPP binary and start it directly.
+        _log.Warn("Restarting XAMPP console Apache: stopping only matching httpd.exe processes (active requests will end).");
+        await StopXamppProcessesAsync(callerSid, callerSession);
+        await StartXamppAsync();
+    }
+
+    private static int? GetSessionId(int id)
+    {
+        try { using var process = Process.GetProcessById(id); return process.SessionId; }
+        catch (ArgumentException) { return null; }
+        catch (InvalidOperationException) { return null; }
+    }
+
+    private async Task StopXamppProcessesAsync(string ownerSid, int sessionId)
+    {
+        for (int round = 0; round < 3; round++)
+        {
+            var remaining = GetRunningApache().Where(p => WindowsSystem.SamePath(p.Exe, _target.Exe)).ToArray();
+            if (remaining.Length == 0) return;
+
+            // Prefer the listening parent before worker processes, reducing
+            // the chance that a live parent respawns workers during shutdown.
+            var listenerPids = WindowsSystem.ListeningPids(80);
+            foreach (var entry in remaining.OrderByDescending(p => listenerPids.Contains(p.Id)))
+            {
+                try
+                {
+                    using var process = Process.GetProcessById(entry.Id);
+                    if (process.HasExited) continue;
+                    if (process.SessionId != sessionId ||
+                        !WindowsSystem.SamePath(process.MainModule?.FileName, _target.Exe) ||
+                        WindowsSystem.OwnerSid(process.Id) != ownerSid)
+                        throw new InvalidOperationException("Apache PID changed identity during restart; refusing to terminate it.");
+                    process.Kill(entireProcessTree: false);
+                }
+                catch (ArgumentException) { /* PID already exited. */ }
+                catch (InvalidOperationException) when (GetSessionId(entry.Id) is null) { /* PID already exited. */ }
+            }
+            for (int attempt = 0; attempt < 10; attempt++)
+            {
+                await Task.Delay(300);
+                if (GetRunningApache().All(p => !WindowsSystem.SamePath(p.Exe, _target.Exe))) return;
+            }
+        }
+        throw new InvalidOperationException("Selected XAMPP processes did not stop; restart aborted (no duplicate launched).");
+    }
+
+    private async Task StartXamppAsync()
+    {
+        // Use the same root and httpd.conf that passed the syntax check.
+        // apache_start.bat may block in the foreground or contain a PAUSE;
+        // launching the selected binary directly avoids both problems.
+        var psi = new ProcessStartInfo(_target.Exe)
+        {
+            WorkingDirectory = _target.Root,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        foreach (var arg in HostPolicy.XamppStartArguments(_target.Root, _target.Config))
+            psi.ArgumentList.Add(arg);
+        using var started = Process.Start(psi) ?? throw new IOException("Could not start XAMPP Apache: " + _target.Exe);
         for (int i = 0; i < 40; i++)
         {
             await Task.Delay(500);
-            var now = GetRunningApache().Where(p => WindowsSystem.SamePath(p.Exe, _target.Exe)).ToArray();
-            if (now.Length > 0 && WindowsSystem.ListeningPids(80).Intersect(now.Select(p => p.Id)).Any())
-            { _log.Info("XAMPP Apache restarted and listening on port 80."); return; }
+            var matches = GetRunningApache().Where(p => WindowsSystem.SamePath(p.Exe, _target.Exe)).ToArray();
+            if (matches.Length > 0 && WindowsSystem.ListeningPids(80).Intersect(matches.Select(p => p.Id)).Any())
+            {
+                _log.Info("XAMPP Apache restarted and is listening on TCP/80.");
+                return;
+            }
+            if (started.HasExited && matches.Length == 0)
+                throw new InvalidOperationException($"XAMPP Apache exited after launch (code {started.ExitCode}); check httpd.conf and Apache error.log.");
         }
-        _log.Warn("Apache restart launched but port 80 listener was not confirmed.");
+        throw new InvalidOperationException("XAMPP Apache restart was not confirmed on TCP/80; check for a port conflict or Apache startup failure.");
     }
 
-    private static async Task RunBatchAsync(string file, bool wait)
-    {
-        var psi = new ProcessStartInfo(WindowsSystem.SystemExecutable("cmd.exe"))
-        {
-            Arguments = $"/D /S /C \"\"{file}\"\"",
-            WorkingDirectory = Path.GetDirectoryName(file)!,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = false,
-            RedirectStandardError = false
-        };
-        using var p = Process.Start(psi) ?? throw new IOException("Cannot run XAMPP batch: " + file);
-        if (wait)
-        {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-            try { await p.WaitForExitAsync(cts.Token); }
-            catch (OperationCanceledException) { /* Batch files may contain PAUSE; Apache stop is verified separately. */ }
-        }
-    }
 }
