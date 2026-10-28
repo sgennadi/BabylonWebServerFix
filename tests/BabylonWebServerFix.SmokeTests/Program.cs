@@ -83,7 +83,7 @@ if (OperatingSystem.IsWindows())
     finally { if (File.Exists(unsignedPackage)) File.Delete(unsignedPackage); }
 }
 
-const msiFile = RewriteInstallerPolicy.LocalFileName;
+const string msiFile = RewriteInstallerPolicy.LocalFileName;
 var offline = RewriteInstallerPolicy.Select(null, null, @"C:\Babylon", p =>
     p.EndsWith(msiFile, StringComparison.OrdinalIgnoreCase));
 Expect(offline.LocalPath is not null && offline.DownloadUrl is null,
