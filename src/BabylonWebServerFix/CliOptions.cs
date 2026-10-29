@@ -20,6 +20,7 @@ public sealed record CliOptions
     public bool SkipBabylonRestart { get; private set; }
     public bool SkipApacheRestart { get; private set; }
     public bool DryRun { get; private set; }
+    public int TrayWaitSeconds { get; private set; } = 0;
 
     public static CliOptions Parse(string[] args)
     {
@@ -35,7 +36,7 @@ public sealed record CliOptions
             o.Action = args[0].ToLowerInvariant();
             i++;
         }
-        if (o.Action is not ("install" or "status" or "remove" or "remove-iis" or "cache-only" or "restart-apache"))
+        if (o.Action is not ("install" or "status" or "remove" or "remove-iis" or "cache-only" or "restart-apache" or "tray-init"))
             throw new ArgumentException("Unknown command: " + o.Action);
 
         string NeedValue()
@@ -66,6 +67,11 @@ public sealed record CliOptions
                 case "--skip-babylon-restart": o.SkipBabylonRestart = true; break;
                 case "--skip-apache-restart": o.SkipApacheRestart = true; break;
                 case "--dry-run": o.DryRun = true; break;
+                case "--wait-seconds":
+                    if (!int.TryParse(NeedValue(), out var seconds) || seconds < 0 || seconds > 300)
+                        throw new ArgumentException("--wait-seconds must be between 0 and 300");
+                    o.TrayWaitSeconds = seconds;
+                    break;
                 case "--help": case "-h": case "/?": o.Help = true; break;
                 default: throw new ArgumentException("Unknown option: " + args[i]);
             }
@@ -79,6 +85,7 @@ public sealed record CliOptions
             throw new ArgumentException("MSI installer options require --iis-mode rewrite, not native.");
         if (o.IisMode is not ("rewrite" or "native")) throw new ArgumentException("--iis-mode must be rewrite or native");
         if (o.MsiPath is not null && o.MsiUrl is not null) throw new ArgumentException("--msi and --msi-url cannot be combined");
+        if (o.TrayWaitSeconds != 0 && o.Action != "tray-init") throw new ArgumentException("--wait-seconds is only valid for tray-init");
         if (o.LogPath != null && !o.EnableLog) throw new ArgumentException("--log-path requires --enable-log");
         if (o.CleanupNextLogon && o.Action is not ("install" or "cache-only"))
             throw new ArgumentException("--cleanup-next-logon is only valid for install / cache-only");
@@ -100,6 +107,7 @@ public sealed record CliOptions
           BabylonWebServerFix.exe remove-iis        [options]
           BabylonWebServerFix.exe cache-only        [options]
           BabylonWebServerFix.exe restart-apache    [options]
+          BabylonWebServerFix.exe tray-init          [--wait-seconds 0..300] [--dry-run]
 
         Options:
           --site "Default Web Site"     IIS site name
@@ -116,6 +124,7 @@ public sealed record CliOptions
           --cache-version 1,0,0,0      Version of Active Setup registration
           --enable-log                  Create optional log (OFF by default)
           --log-path PATH               Custom log path, requires --enable-log
+          --wait-seconds 45             Wait up to 45 seconds for Babylon (tray-init only)
           --dry-run                     Show intended changes without changing anything
           /?, -h, --help                Help
 
@@ -127,6 +136,7 @@ public sealed record CliOptions
           BabylonWebServerFix.exe install
           BabylonWebServerFix.exe install --iis-mode rewrite
           BabylonWebServerFix.exe remove-iis
+          BabylonWebServerFix.exe tray-init --wait-seconds 45
 
         No arguments or a help switch displays help without changing anything.
         An elevated Windows x64 terminal is required for mutating actions.
