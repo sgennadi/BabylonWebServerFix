@@ -9,7 +9,7 @@ The CLI must compile on `windows-2025` with .NET 10 before testing.
 | Explicit `install` required | Install only when `install` is supplied; no-argument invocation does not install | [x] Automated CLI smoke test |
 | `tray-init` CLI and `--wait-seconds` | Accept 0..300; reject invalid values; separate command from IIS/Apache | [x] Windows CLI smoke tests |
 | `tray-init` interactive user | Minimize only visible Babylon window owned by current user/session, do not touch license or config | [ ] C# EXE target-workstation test pending (PowerShell equivalent user-confirmed) |
-| `tray-init --wait-seconds 45` at Student logon | Wait for normal Babylon autostart; minimize once if visible; no extra scheduled startup | [ ] Workstation test pending |
+| `tray-init --wait-seconds 45` at user logon | Wait for normal Babylon autostart; minimize once if visible; no extra scheduled startup | [ ] Workstation test pending |
 | Windows workstation without IIS/Apache | `install` makes no changes, does not delete cache, does not create log | [ ] |
 | IIS only, W3SVC stopped | Adds rule without starting W3SVC | [ ] |
 | IIS native mode, URL Rewrite absent | `install --iis-mode native` adds named Request Filtering rule without MSI | [x] 2026-10-28 BASE-IMAGE: IIS Started, named native filter installed with no MSI download |
@@ -40,8 +40,8 @@ The CLI must compile on `windows-2025` with .NET 10 before testing.
 | IIS and Apache installed, one active | Configures only the intended rules, avoids port changes | [ ] |
 | Multiple Apache installations | Selects actual unique port-80 instance or refuses ambiguous choice | [ ] |
 | XAMPP paths differing by case | Recognized as the same executable | [x] Smoke tests and workstation log |
-| Student Babylon process was running | Restarted in same session; non-elevated token not independently inspected | [x] Session/log; token unverified |
-| Student Babylon was not running | Remains stopped | [ ] |
+| Signed-in user's Babylon process was running | Restarted in same session; non-elevated token not independently inspected | [x] Session/log; token unverified |
+| Signed-in user's Babylon was not running | Remains stopped | [ ] |
 | SYSTEM / Session 0 invocation | No XAMPP console restart; no unintended interactive sessions | [ ] |
 | User cache file locked | Warns, does not delete cookies/passwords; program continues | [ ] |
 | Service accounts SQL Server present | Skips `Windows\\ServiceProfiles` | [ ] |
