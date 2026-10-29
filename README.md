@@ -27,7 +27,7 @@ Download `BabylonWebServerFix.exe` and `SHA256SUMS.txt` from [v1.0.6 Stable](htt
 
 The EXE is an unsigned, self-contained .NET 10 Windows x64 executable. The target machine does not require a separate .NET runtime.
 
-Run IIS/Apache modifying commands from an elevated Command Prompt. `status` is read-only; `tray-init` runs without elevation as the signed-in Babylon user (e.g. Student).
+Run IIS/Apache modifying commands from an elevated Command Prompt. `status` is read-only; `tray-init` runs without elevation as the signed-in Windows user.
 
 ## Quick start
 
@@ -73,7 +73,7 @@ BabylonWebServerFix.exe tray-init --wait-seconds 45
 BabylonWebServerFix.exe tray-init --dry-run
 ```
 
-Run as **Student** (or the intended signed-in user), without elevation or a SYSTEM context. Use `--wait-seconds 45` for logon scripts if Babylon may start later. Babylon must be started by its usual startup mechanism; this option does **not** start it or install any recurring logon task. If the visible window is already absent, no action is taken. Check that the icon is in the tray after the initial use. This command does not touch Babylon licensing, registry values, IIS, Apache, or cache.
+Run as the signed-in Windows user, without elevation or a SYSTEM context. Use `--wait-seconds 45` for logon scripts if Babylon may start later. Babylon must be started by its usual startup mechanism; this option does **not** start it or install any recurring logon task. If the visible window is already absent, no action is taken. Check that the icon is in the tray after the initial use. This command does not touch Babylon licensing, registry values, IIS, Apache, or cache.
 
 ## IIS compatibility modes
 
