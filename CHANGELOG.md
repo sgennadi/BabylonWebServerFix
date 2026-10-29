@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.6 — stable release (2026-10-29)
+
+- Added opt-in `tray-init` command to minimize a visible Babylon main window into the tray in the current user's interactive session.
+- Added `--wait-seconds 0..300` for login-time Babylon start; existing `--dry-run` mode is respected.
+- No registry/file edits, license data copying, or changes to IIS/Apache when running `tray-init`.
+- Keeps existing web-server compatibility behavior from 1.0.5 unchanged.
+- Added CLI parser smoke tests and documentation; GitHub Actions Windows x64 build and test validation.
+
+
 ## 1.0.5 — stable release
 
 - No-argument execution displays help and examples without modifying the system.
