@@ -34,12 +34,10 @@ internal static class BabylonTray
 
         log.Info($"Looking for Babylon.exe in current user session {caller.SessionId}; wait={options.TrayWaitSeconds}s.");
         var elapsed = Stopwatch.StartNew();
-        TimeSpan? noWindowSince = null;
         bool sawBabylon = false;
 
         while (true)
         {
-            bool runningHere = false;
             foreach (var process in Process.GetProcessesByName("Babylon"))
             {
                 using (process)
@@ -50,7 +48,6 @@ internal static class BabylonTray
                             !string.Equals(WindowsSystem.OwnerSid(process.Id), sid, StringComparison.OrdinalIgnoreCase))
                             continue;
 
-                        runningHere = true;
                         sawBabylon = true;
                         process.Refresh();
                         IntPtr hwnd = process.MainWindowHandle;
@@ -88,21 +85,6 @@ internal static class BabylonTray
                 }
             }
 
-            if (runningHere)
-            {
-                noWindowSince ??= elapsed.Elapsed;
-                // When Babylon is already in the tray there may be no main window.
-                // Avoid delaying every subsequent logon for the full wait interval.
-                if (elapsed.Elapsed - noWindowSince.Value >= TimeSpan.FromSeconds(4))
-                {
-                    log.Info("Babylon is running, but no visible main window is available. Already hidden or still starting; no change.");
-                    return 0;
-                }
-            }
-            else
-            {
-                noWindowSince = null;
-            }
 
             if (elapsed.Elapsed >= TimeSpan.FromSeconds(options.TrayWaitSeconds))
                 break;
