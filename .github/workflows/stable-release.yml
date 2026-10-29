@@ -87,13 +87,21 @@ jobs:
           )
           if errorlevel 1 exit /b 1
       - name: Verify published assets
+        shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
         run: |
-          gh release view "%TAG%" --repo "%GITHUB_REPOSITORY%" --json assets --jq ".assets[].name" > assets.txt
-          if errorlevel 1 exit /b 1
-          findstr /X /C:"BabylonWebServerFix.exe" assets.txt >NUL
-          if errorlevel 1 exit /b 1
-          findstr /X /C:"SHA256SUMS.txt" assets.txt >NUL
-          if errorlevel 1 exit /b 1
-          del assets.txt
+          for ($attempt = 1; $attempt -le 10; $attempt++) {
+            $response = gh release view $env:TAG --repo $env:GITHUB_REPOSITORY --json assets
+            if ($LASTEXITCODE -eq 0) {
+              $assets = ($response | ConvertFrom-Json).assets
+              $names = @($assets | ForEach-Object { $_.name })
+              if ($names -contains 'BabylonWebServerFix.exe' -and $names -contains 'SHA256SUMS.txt') {
+                Write-Host ('Release assets verified on attempt ' + $attempt)
+                exit 0
+              }
+            }
+            Write-Host ('Release assets not yet visible; retry ' + $attempt + '/10')
+            Start-Sleep -Seconds 3
+          }
+          throw 'Stable release assets were not confirmed after retries.'
