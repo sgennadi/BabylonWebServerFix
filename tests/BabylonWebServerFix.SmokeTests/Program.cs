@@ -37,6 +37,17 @@ Expect(HostPolicy.ApacheRuleRequiresUpdate(true, false, true),
 Expect(HostPolicy.ApacheRuleRequiresUpdate(true, true, false),
     "Apache snippet changed; configuration update needed");
 
+Expect(CliOptions.Parse(["tray-init"]).Action == "tray-init", "tray initializer parses");
+Expect(CliOptions.Parse(["tray-init", "--wait-seconds", "45"]).TrayWaitSeconds == 45, "tray initializer bounded wait");
+Expect(CliOptions.Parse(["tray-init"]).TrayWaitSeconds == 0, "tray initialization does not wait by default");
+bool badTrayWait = false;
+try { _ = CliOptions.Parse(["tray-init", "--wait-seconds", "301"]); }
+catch (ArgumentException) { badTrayWait = true; }
+Expect(badTrayWait, "tray timeout above limit rejected");
+bool badTrayInstallOption = false;
+try { _ = CliOptions.Parse(["install", "--wait-seconds", "10"]); }
+catch (ArgumentException) { badTrayInstallOption = true; }
+Expect(badTrayInstallOption, "tray wait not allowed on install");
 Expect(CliOptions.Parse([]).Help, "no arguments show help");
 Expect(CliOptions.Parse(["/?"]).Help, "Windows slash question mark shows help");
 Expect(CliOptions.Parse(["--help"]).Help, "long help flag works");
