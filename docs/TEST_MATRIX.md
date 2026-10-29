@@ -1,4 +1,4 @@
-# Validation matrix for stable 1.0.5
+# Validation matrix for stable 1.0.6
 
 The CLI must compile on `windows-2025` with .NET 10 before testing.
 
@@ -7,6 +7,9 @@ The CLI must compile on `windows-2025` with .NET 10 before testing.
 | EXE without arguments | Show help and usage examples, exit successfully, make no configuration changes | [x] Automated CLI smoke test and release workflow validation |
 | EXE with `/?`, `-h` or `--help` | Show help and examples, without requiring elevation or changing IIS/Apache | [x] Automated CLI smoke tests and release workflow validation |
 | Explicit `install` required | Install only when `install` is supplied; no-argument invocation does not install | [x] Automated CLI smoke test |
+| `tray-init` CLI and `--wait-seconds` | Accept 0..300; reject invalid values; separate command from IIS/Apache | [x] Windows CLI smoke tests |
+| `tray-init` interactive user | Minimize only visible Babylon window owned by current user/session, do not touch license or config | [ ] C# EXE target-workstation test pending (PowerShell equivalent user-confirmed) |
+| `tray-init --wait-seconds 45` at Student logon | Wait for normal Babylon autostart; minimize once if visible; no extra scheduled startup | [ ] Workstation test pending |
 | Windows workstation without IIS/Apache | `install` makes no changes, does not delete cache, does not create log | [ ] |
 | IIS only, W3SVC stopped | Adds rule without starting W3SVC | [ ] |
 | IIS native mode, URL Rewrite absent | `install --iis-mode native` adds named Request Filtering rule without MSI | [x] 2026-10-28 BASE-IMAGE: IIS Started, named native filter installed with no MSI download |
