@@ -139,7 +139,8 @@ public sealed record CliOptions
           BabylonWebServerFix.exe tray-init --wait-seconds 45
 
         No arguments or a help switch displays help without changing anything.
-        An elevated Windows x64 terminal is required for mutating actions.
+        IIS/Apache modifications require an elevated Windows x64 terminal.
+        tray-init runs as the signed-in user and needs no administrator rights.
         If neither IIS nor Apache is present: do nothing (including cache cleanup).
         Default IIS mode: native Request Filtering, no MSI download.
         --iis-mode rewrite enables Microsoft URL Rewrite (or use --msi / --msi-url).
