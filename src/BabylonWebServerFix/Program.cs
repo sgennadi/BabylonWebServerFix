@@ -24,13 +24,18 @@ public static class Program
             Console.Error.WriteLine("Windows x64 is required.");
             return 2;
         }
-        if (options.Action != "status" && !WindowsSystem.IsAdministrator())
+        if (options.Action is not ("status" or "tray-init") && !WindowsSystem.IsAdministrator())
         {
             Console.Error.WriteLine("Run from an elevated Command Prompt / PowerShell (Administrator).");
             return 2;
         }
         try
         {
+            if (options.Action == "tray-init")
+            {
+                using var trayLog = new DeployLog(options);
+                return await BabylonTray.InitializeAsync(options, trayLog);
+            }
             // Do not create a log file if neither web server is installed.
             // IIS-only cleanup must not inspect or depend on Apache installations.
             var apache = options.Action == "remove-iis" ? null : ApacheService.Detect(options);
