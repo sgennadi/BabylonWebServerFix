@@ -63,6 +63,18 @@ BabylonWebServerFix.exe remove
 
 Do not remove or install rules on a working computer simply to switch Babylon interface modes.
 
+## Babylon tray initialization (opt-in)
+
+On some Babylon Pro 12 profiles, the first manual minimize to the system tray is remembered for subsequent launches with `-AutoStart`. The separate `tray-init` action sends Windows `WM_SYSCOMMAND / SC_MINIMIZE` to the visible Babylon window in the **calling user's interactive session**. A workstation test confirmed that this approach activates the remembered tray behavior.
+
+```cmd
+BabylonWebServerFix.exe tray-init
+BabylonWebServerFix.exe tray-init --wait-seconds 45
+BabylonWebServerFix.exe tray-init --dry-run
+```
+
+Run as **Student** (or the intended signed-in user), without elevation or a SYSTEM context. Use `--wait-seconds 45` for logon scripts if Babylon may start later. Babylon must be started by its usual startup mechanism; this option does **not** start it or install any recurring logon task. If the visible window is already absent, no action is taken. Check that the icon is in the tray after the initial use. This command does not touch Babylon licensing, registry values, IIS, Apache, or cache.
+
 ## IIS compatibility modes
 
 ### Native Request Filtering (default)
@@ -106,6 +118,7 @@ A running Apache Windows service or matching XAMPP console instance may be resta
 | Command or option | Purpose |
 |---|---|
 | `status` | Show detected server configuration and managed rules |
+| `tray-init [--wait-seconds 0..300]` | Opt-in minimize visible Babylon window in current user session (no elevation) |
 | `install [--iis-mode native|rewrite]` | Install applicable compatibility rules |
 | `install --dry-run` | Preview modifications without applying them |
 | `remove-iis` | Remove only managed IIS compatibility rules |
